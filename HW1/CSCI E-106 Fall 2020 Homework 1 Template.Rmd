@@ -100,13 +100,56 @@ b) The maximum likelihood estimator is $b_{1}=\sum X_{i} Y_{i}/\sum X_{i}^2$.  F
 ## Solutions:
 a) 
 ```{r}
+# input data
+x_num_galley <- c(7, 12, 4, 14, 25, 30)
+y_corr_cost <- c(128, 213, 75, 250, 446, 540)
+n_beta <- 100
+sig2_err <- 16 # variance given
+#sig_err <- sqrt(sig2_err)
+
+# empty vectors to store output
+lkhood_val <- vector(mode = 'integer', length = n_beta) # to store all likelihood values
+#iteration_lkhood <- vector(mode = 'integer', length = length(x_num_galley))
+
+for (beta_val in 1: n_beta) {
+  #print(beta_val)
+  interim1 <-  beta_val * x_num_galley
+  interim2 <-  (y_corr_cost - interim1)^2
+  interim3 <-  sum(interim2)
+  interim4 <- exp(interim3/(-2*sig2_err))
+  interim5 <- interim4/((2*pi*sig2_err)^(length(x_num_galley)/2))
+  lkhood_val[beta_val] <- interim5
+}
+#print(lkhood_val)
+which.max(lkhood_val)
+
+# define likelihood function 
+#lkhood_func <- function(x, b, sig_sq = sig2_err, sigma_val = sig_err) {
+ # interim1 <- -0.5 * ((x-b/sigma_val)^2)
+  #interim2 <- 1/(sigma_val*sqrt(2*pi))
+#  return (interim2 * exp(interim1))
+#}
+
+#x <- 0
+#for (i in n_iter) {
+ # #print(i)
+  #for (xindex in 1:length(num_galley)) {
+   # x <- x+1
+    #print(x)
+    #iteration_lkhood[xindex] <- lkhood_func(num_galley[xindex], i)
+  #}
+  #lkhood_val[i] <- prod(iteration_lkhood)
+#}
 
 ```
 b) 
 
 ```{r}
-
+mle_2b <- sum(x_num_galley*y_corr_cost)/sum(x_num_galley * x_num_galley)
+mle_2b
 ```
+
+As seen above the results in part 2a and part 2b are consistent.
 
 ## Problem 3
 
