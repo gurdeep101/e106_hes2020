@@ -69,12 +69,11 @@ For a 1 point increase in entrance test score the GPA increases by the $beta_1$ 
 e) 
 Solution: 
 ```{r}
-res_q1[1:10]
+res_q1[1:10] # residuals were calculated in 1a; printing 1st 10 variables here
 ssr_q1 = sum(res_q1)
 print(ssr_q1)
 ```
-
-The residuals are not exactly zero but a very small value as seen above
+The residuals are not exactly zero but a very small value as seen above and can be considered as summing to zero for all practical purposes.
 
 f) 
 Solution: 
@@ -105,11 +104,10 @@ x_num_galley <- c(7, 12, 4, 14, 25, 30)
 y_corr_cost <- c(128, 213, 75, 250, 446, 540)
 n_beta <- 100
 sig2_err <- 16 # variance given
-#sig_err <- sqrt(sig2_err)
 
-# empty vectors to store output
-lkhood_val <- vector(mode = 'integer', length = n_beta) # to store all likelihood values
-#iteration_lkhood <- vector(mode = 'integer', length = length(x_num_galley))
+
+# empty vectors to store output; len = n_beta to store all likelihood values
+lkhood_val <- vector(mode = 'integer', length = n_beta) 
 
 for (beta_val in 1: n_beta) {
   #print(beta_val)
@@ -120,28 +118,14 @@ for (beta_val in 1: n_beta) {
   interim5 <- interim4/((2*pi*sig2_err)^(length(x_num_galley)/2))
   lkhood_val[beta_val] <- interim5
 }
-#print(lkhood_val)
+
+# get index of value which has maximum value of likelihood
+# max index value corresponds to beta
 which.max(lkhood_val)
 
-# define likelihood function 
-#lkhood_func <- function(x, b, sig_sq = sig2_err, sigma_val = sig_err) {
- # interim1 <- -0.5 * ((x-b/sigma_val)^2)
-  #interim2 <- 1/(sigma_val*sqrt(2*pi))
-#  return (interim2 * exp(interim1))
-#}
-
-#x <- 0
-#for (i in n_iter) {
- # #print(i)
-  #for (xindex in 1:length(num_galley)) {
-   # x <- x+1
-    #print(x)
-    #iteration_lkhood[xindex] <- lkhood_func(num_galley[xindex], i)
-  #}
-  #lkhood_val[i] <- prod(iteration_lkhood)
-#}
-
 ```
+Value of likelihood function is largest for $\beta_1$ = 18
+
 b) 
 
 ```{r}
@@ -171,7 +155,7 @@ cdi <- read.csv("/cloud/project/HW1/CDI Data.csv")
 head(cdi)
 colnames(cdi)
 
-# fit regression separately for each variable 
+# fit regression separately for each variable specified in the question
 reg_q2_tot_pop <- lm(Number.of.active.physicians~Total.population, data = cdi)
 reg_q2_tot_pop$coefficients
 
@@ -180,8 +164,14 @@ reg_q2_num_beds$coefficients
 
 reg_q2_tot_income <- lm(Number.of.active.physicians~Total.personal.income, data = cdi)
 reg_q2_tot_income$coefficients
-colnames(cdi)
 ```
+The estimated regression functions are as below:
+
+Number.of.active.physicians = -1.106348e+02 + 2.795425e-03 * Total.population
+
+Number.of.active.physicians = -95.9321847 + 0.7431164 * Number.of.hospital.beds
+
+Number.of.active.physicians = -48.3948489 + 0.1317012 * Total.personal.income
 b) 
 ```{r}
 plot(cdi$Total.population, cdi$Number.of.active.physicians, xlab = 'Total Population', ylab = 'Number of Active Physicians')
@@ -194,6 +184,10 @@ plot(cdi$Total.personal.income, cdi$Number.of.active.physicians, xlab = 'Total P
 abline(reg_q2_tot_income, col = 'red')
 
 ```
+From a visual inspection of the graphs the regression lines do appear to be a good fit for each of the predictor variables; though in all cases the data points are clustered towards the start of the x-axis. 
+
+Hence, some form of outlier removal and/or log transformation might be appropriate here.
+
 c) 
 ```{r}
 sse_q2_num_beds = sum((reg_q2_num_beds$residuals)^2)
@@ -208,11 +202,44 @@ sse_q2_tot_pop = sum((reg_q2_tot_pop$residuals)^2)
 mse_q2_tot_pop = sse_q2_tot_pop/(length(reg_q2_tot_pop$residuals)-2)
 mse_q2_tot_pop
 ```
+Number of beds has the lowest mean square error. I would use this variable since of the 3 given to us this has the lowest overall deviation from given values. 
+
 ## Problem 4
 Refer to the CDI data set. Use the number of active physicians as Y and total personal income as X. Select 1,000 random samples of 400 observations, fit the regression model and record $\beta_{0}$ and $\beta_{1}$ for each selected sample. Calculate the mean and variance of $\beta_{0}$ and $\beta_{1}$ based on the 1,000 different regression line and compare against the regression model in question 3 part a. (20 points)
 
 ## Solution: 
 
 ```{r}
-colnames(cdi)
+# create new DF with columns of interest
+colnames(cdi) # to get index numbers of columns to copy into new DF
+df_q4 <- cdi[,c(8, 16)]
+head(df_q4)
+
+# specify parameters and blank vectors to store output
+set.seed(123)
+n_obs <- 400
+n_samples <- 1000
+beta0_q4 <- vector(mode = 'integer', length = n_samples)
+beta1_q4 <- vector(mode = 'integer', length = n_samples)
+
+for (i in 1:n_samples) {
+  # print(i)
+  q4_index <- sample(1:nrow(df_q4), n_obs)
+  q4_sample_df <- df_q4[q4_index,]
+  q4_sample_reg <- lm(Number.of.active.physicians~Total.personal.income, data = q4_sample_df)
+  beta0_q4[i] <- q4_sample_reg$coefficients[1]
+  beta1_q4[i] <- q4_sample_reg$coefficients[2]
+}
+
+q4_beta0_mean <- mean(beta0_q4)
+print(q4_beta0_mean)
+q4_beta0_var <- var(beta0_q4)
+print(q4_beta0_var)
+
+q4_beta1_mean <- mean(beta1_q4)
+print(q4_beta1_mean)
+q4_beta1_var <- var(beta1_q4)
+print(q4_beta1_var)
+
 ```
+The regression coefficient estimates identified in Q4 are fairly similar to those identified in Q3.a. save for minor differences in 1000th of a decimal point.
