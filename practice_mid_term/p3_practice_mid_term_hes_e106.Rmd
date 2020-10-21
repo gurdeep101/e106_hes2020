@@ -1,0 +1,69 @@
+---
+title: "p3_practice_mid_term_hes_e106"
+author: "Gurdeep"
+date: "21/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+rm(list = ls())
+
+setwd("/cloud/project/practice_mid_term") # change to local directory before running
+
+library(knitr)
+library(onewaytests)
+library(olsrr)
+library(lmtest)
+library(MASS)
+library(ALSM)
+
+pmq3 <- read.csv('PM Q3.csv')
+head(pmq3)
+colnames(pmq3)
+dim(pmq3)
+
+```
+
+Perform one factor analysis by finding the best variable to explain Y. Fit one variable regression model with Y as a dependent variable against remaining variables, as an independent variable one at time. Choice the best variable explain Y and comment on the QQ plot and error vs. fitted values graph for the model assumptions.
+
+```{r}
+for (i in 2:(ncol(pmq3))) {
+  print(paste("Regression with x",i-1))
+  #print(pmq3[1,i])
+  reg <- lm(y~pmq3[,i], data = pmq3)
+  print(summary(reg))
+}
+```
+
+As we see from above x2 has the best predictive value. We plot residuals below
+
+```{r}
+reg_p3_final <- lm(y~x2, data = pmq3)
+summary(reg_p3_final)
+ei_p3_final <- reg_p3_final$residuals
+
+# plot residuals and other standard plots
+old.par <- par(mfrow = c(2,2))
+plot(reg_p3_final)
+old.par
+
+newer.par = par(mfrow = c(2,2))
+plot(pmq3$x2, pmq3$y, xlab = 'x2', ylab = 'y')
+plot(pmq3$x2,ei_p3_final, xlab = 'x', ylab = 'Residuals')
+boxplot(ei_p3_final, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residual')
+hist(ei_p3_final, main = 'Histogram of Residuals')
+newer.par
+```
+
+From above we see that x2 is the best independent variable with R2 of 0.69. It has F* = 85.38 and p-value = 2.926e-11 both of which convey significance. 
+
+The residual vs fitted plots show random pattern which is also reflected in the scatter plot and residual vs X plots.
+
+The QQ plots are inline for 1SD; i.e. 68% of the values and the boxplot is also symmetrical except for a solitary outlier while a few outliers show up in the plots. 
+
+Hence, regression assumptions relating to linear relation, constant variance, independence and normality are satisfied.
