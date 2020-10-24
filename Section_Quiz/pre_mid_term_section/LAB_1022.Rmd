@@ -1,0 +1,266 @@
+---
+title: "LAB_1022"
+author: "RGT"
+date: "10/22/2020"
+output: html_document
+---
+
+### Instructions
+
+1-) Open book and open notes exam ( textbooks (print or pdf), lecture slides, notes, practice exam, homework solutions, and TA slides, including all Rmd's*).
+
+2-) You are allowed to use RStudio Cloud (https://rstudio.cloud.) , Microsoft Word, Power Point and PDF reader, and canvas on your laptop.
+
+3-) You need to have a camera on your laptop. Proctorio is required to start this exam. If you are prompted for an access code, you must Configure Proctorio  on your machine. 
+
+4-)Please read the list of recording and restrictions provided by Proctorio carefully before taking the exam 
+
+5-)Please pay attention any timing and technical warnings that popped up your screen 
+The exam will be available from Friday October 23rd at 12 pm EST through Monday October 26th at 7:20 pm EST.
+
+6-)Once you start the exam, you have to complete the exam in 3 hours or by Monday October 26th at 7:20 pm EST, whichever comes first.
+
+7-)In order to receive full credit, please provide full explanations and calculations for each questions 
+
+8-)Make sure that you are familiar with the procedures for troubleshooting exam issues preview the document. Follow the protocol if there are any issues!
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Problem 1: Refer to the PM Q1 Data set. (40 Points)
+```{r upload data}
+
+library(readr)
+PM.Q1 <- read_csv("PM Q1.csv")
+
+```
+a- ) Build a regression model to predict Y as a function of X. Write down the regression model, Is the regression model significant? (5 points)
+```{r seguda}
+
+f.q1.a<-lm(Y~X,data=PM.Q1)
+summary(f.q1.a)
+
+```
+
+The model is significant. Y= -81432.946 + 158.95*X. $R^{2}$ is 67%.
+
+b-) Check all the assumptions related to the regression model and perform Brown-Forsythe Test. (10 points)
+*A1) normal linear regression model is appropriate for the problem.
++Plot the predictor variable X against the response values Y; to ascertain whether any departures from linear regression model are evident. State your findings.
+*A2) The estimated errors (residuals) are independent from the X and from the estimated values Y_hat.
++Plot the residuals ei against the fitted values Y_hat and the predictor variable values X; to ascertain whether any departures from linear regression model are evident. State your findings.
+*A3)  Errors are iid~N(0,sigma) that is the errors are independent and identically normally distributed.
++Obtain the residuals ei and prepare a box plot of the residuals. What information is provided by your plot?
++Prepare a normal probability plot of the residuals (QQ plot).  Also obtain the coefficient of correlation between the ordered residuals and their expected values under normality. Does the normality assumption appear to be reasonable here?
++Correlation Test of Normality of Residuals (Shapiro Test)
+*A4) Error terms have constant variance and mean=0 (homoscedastic). 
++Brown-Forsythe
++Breush-Pagan
+
+```{r 1b}
+#A1
+f.q1.a<-lm(Y~X,data=PM.Q1)
+par(mfrow=c(2,2))
+plot(PM.Q1$X,PM.Q1$Y,xlab="Predictor Variable",ylab="Response Variable")
+abline(f.q1.a)
+#A2
+plot(f.q1.a)
+#A3
+ei<-f.q1.a$residuals
+boxplot(ei,horizontal=TRUE,staplewex=0.5,col=3,xlab="Residual")
+#Ho: Errors are normally distributed Ha: Errors are Not normally distributed
+shapiro.test(f.q1.a$residuals)
+#A4 Ho: Do Errors have constant variance. Ha: Errors have not constant variance.
+#Brown-Forsythe Test using the median X to split the data
+library(onewaytests)
+bf.dat<-data.frame(ei,yhat=f.q1.a$fitted.values,ind=as.factor(I(PM.Q1$X<=median(PM.Q1$X))*1))
+bf.test(ei~ind,data=bf.dat)
+#Breush Pagan Ho: Rho=0; Ha: Rho different from 0 so variable variance
+ei2<-ei^2
+g<-lm(ei2~PM.Q1$X)
+ep=anova(g)
+SSE=ep[2,2]
+SSE
+rr=anova(f.q1.a)
+SSR=  rr[1,3]
+```
+#Obtain the sum of the regression of the residuals and SSE from regression
+#built the Xisquare statistic for the test
+```{r replacing values into Breusch-Pagan from scratch}
+ChiSquare=(SSR/2)/((SSE/522)^2)
+ChiSquare
+#critical value is 3.841459-can not reject null 0 is below
+qchisq(0.95,1)
+# here the p-value is 0.25 can not reject null p*=0.05
+1-pchisq(4183563,1)
+
+install.packages("lmtest")
+library(lmtest)
+bptest(f.q1.a)
+```
+QQ plot indicates the departure from the normality. Residual vs. Fitted plot indicates hetoradasticity. Shapiro-Wilk normality test:
+
+Ho: Data is normally distributed
+Ha: Data is NOT normally distributed
+
+P value is < 0.05, Reject Ho. Errors are Not normally distributed.
+
+Ho: Error Variance is constant
+Ha: Error Variance is Not constant
+
+p-value of the test is 0.53, accept the null. Error variance is constant.
+
+c-)Do we need to transform Y? Use Box-Cox procedure to find out appropriate transformation of Y and justify your choice. (10 points) 
+
+The Box-Cox procedure is suggesting $\frac{1}{Y^{0.1}}$. However, this is complicated transformation and not easy to explain. As such, i will use the log transformation. 
+
+QQ plot looks much better. It is approximately normally distributed. Residual vs.Fitted Values do not indicate heterodasticty.  
+the new model is log(Y) = 11.28 + 0.0005 X, $R^{2}$ is increased to 70%.
+```{r siguiente}
+library(MASS)
+par(mfrow=c(1,1))
+bc=boxcox(f.q1.a,lambda = seq(-2,2,0.1))
+best.lam=bc$x[which(bc$y==max(bc$y))]
+best.lam
+```
+
+QQ plot and Shapiro do not indicate any significant departure from the normal distribution.
+
+```{r graficas}
+
+f.q1.a1<-lm(log(Y)~X,data=PM.Q1)
+summary(f.q1.a1)
+par(mfrow=c(2,2))
+error.std = rstandard(f.q1.a1)
+qqnorm(error.std,ylab="Standardized Residuals",xlab="Normal Scores",main="Plastic Hardness Data", pch=19) 
+qqline(error.std)
+shapiro.test(f.q1.a1$residuals)
+```
+
+plot(f.q1.a1)
+```
+d-) Use the final model to predict Y for three new X values, 1100, 3000 and 4900. which methods would use you to calculate the joint 90% confidence intervals? Justify your choice and calculate the confidence interval using the final model in part c. (15 points) 
+
+```{r en esteroided}
+X<-c(1100,3000,4900)
+pred<-predict.lm(f.q1.a1,data.frame(X = c(X)),se.fit=TRUE)
+fit<-exp(pred$fit)
+fit
+B=qt(1-0.1/(2*3),520)
+S=sqrt(3*qf(0.90,3,520))
+cbind(B,S)
+#including prediction standard deviation for Bonferroni=Chk PredictionSheffeBon and WorkingHotellin
+s.pred<-sqrt(pred$se.fit^2+pred$residual.scale^2)
+exp(cbind(pred$fit-B*s.pred,pred$fit+B*s.pred))
+```
+Log transformation is used for the final. We need to transform it back to original scale. The predicted values are 139,115.5 366,399.8 965,016.8 
+
+Bonferroni procedure will yield somewhat tighter prediction limits as ( B ≤ S ).
+Please see below for the confidence intervals.
+
+$84,160.65 \leq \hat{Y_{1}} \leq 229,954.5$
+$221,828.97 \leq \hat{Y_{2}} \leq  605,190.5$
+$580,722.72 \leq \hat{Y_{3}} \leq 1,603,617.9$
+## Problem 2
+
+Copy and paste the data below in R. (30 points)
+
+y=c(98,135,162,178,221,232,283,300,374,395)\\
+x=c(0,1,2,3,4,5,6,7,8,9)
+
+a-) is the linear fit appropriate? If not, transform the data and find an appropriate fit. Comment on the model and regression model assumptions. (20 points)
+##############RESCUE CODE###
+graphics.off()
+ par("mar")
+ par(mar=c(1,1,1,1))
+#######################
+```{r sigue mas}
+y=c(98,135,162,178,221,232,283,300,374,395)
+x=c(0,1,2,3,4,5,6,7,8,9)
+par(mfrow=c(1,1))
+plot(x,y)
+f2<-lm(y~x)
+summary(f2)
+par(mfrow=c(2,2))
+plot(f2)
+error.std = rstandard(f2)
+qqnorm(error.std,ylab="Standardized Residuals",xlab="Normal Scores",main="Regression QQ plot") 
+qqline(error.std)
+```
+#Quantitative corroboration of QQ plot
+```{r sigue masss}
+shapiro.test(f2$residuals)
+par(mfrow=c(1,1))
+bc1=boxcox(f2,lambda=seq(-2,2,0.1))
+best.lam1=bc1$x[which(bc1$y==max(bc1$y))]
+best.lam1
+
+f21<-lm(sqrt(y)~x)
+summary(f21)
+```
+The scatter plot indicates linear relationship between x and Y. However, QQ plot indicates a slight s function, which indicates slight departure from the normal distribution. Boxcox transfomration indicates, square root transformation.
+The model is Y=91.564 + 32.497X and $R^{2}$ is 98%. There is a slight increase of the power of the model, $R^{2}$ is 99% and the model is $\sqrt{Y}=10.26+1.08X$.QQ plot shows the S shape, this is could be due to low sample size (10). However the final model is $\sqrt{Y}=10.26+1.08X$.
+
+
+b-) Predict Y when x=10, and calculate the prediction confidence interval for 90% confidence level (10 points)
+
+See below, we need to transform it back to original scale.
+```{r simple prediction}
+pred<-predict.lm(f21,data.frame(x = 10),interval =  "prediction",level=0.90)
+pred^2
+```
+## Problem 3
+
+Refer to the PM Q3 Data set. (30 Points)
+
+Perform one factor analysis by finding the best variable to explain Y. Fit one variable regression model with Y as a dependent variable against remaining variables, as an independent variable one at time. Choice the best variable explain Y and comment on the QQ plot and error vs. fitted values graph for the model assumptions. 
+
+
+```{r last problem}
+library(readr)
+PM.Q3 <- read_csv("PM Q3.csv")
+f1<-lm(y~x1,data=PM.Q3)
+f2<-lm(y~x2,data=PM.Q3)
+f3<-lm(y~x3,data=PM.Q3)
+f4<-lm(y~x4,data=PM.Q3)
+f5<-lm(y~x5,data=PM.Q3)
+f6<-lm(y~x6,data=PM.Q3)
+par(mfrow=c(2,3))
+plot(PM.Q3$x1,PM.Q3$y);abline(f1)
+plot(PM.Q3$x2,PM.Q3$y);abline(f2)
+plot(PM.Q3$x3,PM.Q3$y);abline(f3)
+plot(PM.Q3$x4,PM.Q3$y);abline(f4)
+plot(PM.Q3$x5,PM.Q3$y);abline(f5)
+plot(PM.Q3$x6,PM.Q3$y);abline(f6)
+
+a=summary(f1)$r.squared
+b=summary(f2)$r.squared
+c=summary(f3)$r.squared
+d=summary(f4)$r.squared
+e=summary(f5)$r.squared
+f=summary(f6)$r.squared
+
+h=anova(f2)[2,3]
+i=anova(f5)[2,3]
+
+gt=cbind(a,b,c,d,e,f)
+gt
+rg=cbind(h,i)
+rg
+
+par(mfrow=c(2,2))
+plot(f2)
+```
+All variables are significant. The $R^{2}$s are below.
+
+model with x1: $R^{2}$ is 0.2309
+model with x2: $R^{2}$ is 0.692
+model with x3: $R^{2}$ is 0.2836
+model with x4: $R^{2}$ is 0.1281
+model with x5: $R^{2}$ is 0.547
+model with x6: $R^{2}$ is 0.3867
+
+x2 is the most signficiant variable as it has the highest $R^{2}$. QQ plot roughly looks normal, however, observation 34 looks like an outlier. Residual vs. Fitted plot indicates heterodasticity and more test needed to for this.
+
+

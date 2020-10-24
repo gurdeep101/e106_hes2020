@@ -1,0 +1,159 @@
+---
+title: "CSCI_E_106 Section 2"
+author: "Rafael GT"
+date: "9/17/2020"
+output: html_document
+---
+## Before you start:
+
+*Create a sub-directory in your computer
+*Open CANVAS and look for the data 
+*Read specs see below-rephrase the problem with your own words
+*Master story telling and enjoy the process
+
+# Review from Class 1:
+1. Toluca Example (5 minutes)
+
+The Toluca company manufactures refrigerator equipment and parts in lots of
+various sizes. 
+
+Company officials want the size of the lots to be optimized
+subjet to their production cost.
+
+The key driver of costs is the number of labor hours to produce the lots.
+
+Management collects data on the size of 25 lots and corresponding hours.
+
+Managers believe the information behaves like normal.
+ 
+Step 1.- State the equation for the normal error model for the problem.
+Assumptions:
+\[Y_i=\beta_o+\beta_iX_i+\varepsilon_i \]
+
+\[
+  \varepsilon_i\sim iid \mathcal{N}(\mu,\,\sigma^{2})\,.
+\] 
+## R Studio Cloud  -R Commands
+Step 2.- Set your R-cloud environment:
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+rm(list=ls())
+```
+Step3.- Upload Toluca Data to R Studio Cloud:
+```{r}
+toluca_data <- read_csv("toluca_data.csv")
+head(toluca_data)
+View(toluca_data)
+attach(toluca_data)
+```
+Step4 fitting the regression model: 
+```{r}
+toluca.reg <- lm(workhrs ~ lotsize)
+```
+Step5 getting the summary regression output:
+```{r}
+summary(toluca.reg)
+```
+Step6 getting the Analysis of Variance table (ANOVA):
+```{r}
+anova(toluca.reg)
+```
+Step7 getting the fitted values:
+```{r}
+fitted(toluca.reg)
+
+```
+Step8 getting the residual values (why not the errors?):
+```{r}
+names(toluca.reg)
+resid(toluca.reg)
+toluca.reg$residuals
+```
+Step9 overlaying the regression line on the scatter plot of X and Y:
+```{r}
+plot(lotsize, workhrs)
+abline(toluca.reg)
+```
+```
+The error (or disturbance) of an observed value is the deviation of the observed
+value from the (unobservable) true value of a quantity of interest (for example,
+a population mean), and the residual of an observed value is the difference 
+between the observed value and the estimated value of the quantity of interest.
+
+2. Beer Example (5 minutes)
+
+The Beer manufacturing industry is very competitive. 
+
+When a beer stays too long in storage its flavor rapidly decays ruining
+the consumer experience.
+
+The main drivers for the duration of the good taste of a beer are the beer’s 
+antioxidant compounds.
+
+In general beers with high “Total Phenolic Content (TPC)” taste good.
+
+Management collects relevant data on 40 lager beers, and they believe the
+information behaves like normal.
+
+The objective is to find the best beer’s antioxidant compounds.
+(Perform one factor analysis by finding the best variable to explain Total
+Phenolic Content (TPC)). 
+
+
+*Repeat Steps 1 and 2 above.
+Step3.- Upload Beer Data to R Studio Cloud:
+```{r}
+Beerdata<- read_csv("lager_antioxidant.csv")
+head(Beerdata)
+View(Beerdata)
+attach(Beerdata)
+Beerdata=data.frame(Beerdata)
+```
+Step4.-  Fit one variable regression model with TPC as a dependent variable
+against remaining variables above, as an independent variable one at time
+For example, TPC = bo + b1 MA, TPC=b0+b1 DSA and so on:
+```{r}
+f1<-lm(tpc~ma,data=Beerdata)
+f2<-lm(tpc~dsa,data=Beerdata)
+f3<-lm(tpc~asa,data=Beerdata)
+f4<-lm(tpc~orac,data=Beerdata)
+f5<-lm(tpc~rp,data=Beerdata)
+f6<-lm(tpc~mca,data=Beerdata)
+```
+Step5.-Let know the computer how to organize the information.
+Use an R-function. The "par(mfrow)" function is handy for creating
+a simple multi-paneled plot:
+```{r}
+par(mfrow=c(2,3))
+plot(ma,tpc);abline(f1)
+plot(dsa,tpc);abline(f2)
+plot(asa,tpc);abline(f3)
+plot(orac,tpc);abline(f4)
+plot(rp,tpc);abline(f5)
+plot(mca,tpc);abline(f6)
+```
+Step6.-Use an R-function to find the best fit.
+Each function needs to input the parameters "function(here the variables)", 
+to know where the results are going to be saved ("data.framework"), when
+to stop (for i...). What is the equation or operations you want to do:
+```{r}
+
+prg1<-function(x){         
+  out1<-list({})         
+  out2<-data.frame(matrix(0,nrow=6,ncol=2)) 
+
+           for (i in 1:6){                   
+
+                    out1[[i]]<-lm(x[,2]~x[,2+i],data=x)                   
+
+                    out2[i,]<-cbind(dimnames(x)[[2]][2+i],round(sum(out1[[i]]$residuals^2),2)) 
+
+                              }     
+   dimnames(out2)[[2]]<-c("X","SSE")    
+
+   list(out1,out2)
+}
+prg1(Beerdata)
+
+```

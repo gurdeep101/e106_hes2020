@@ -1,0 +1,198 @@
+---
+title: 'CSCI E-106:Assignment 2 Solutions'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: September 21, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Problem 1
+
+Refer to the regression model $Y_{i} = \beta_{0} + \epsilon_{i}$. (25pts)
+
+a-) Derive the least squares estimator of $\beta_{0}$ for this model.(10pts) 
+
+$Q=\sum(Y_{i} - b_{0})^2$
+$\frac{dQ}{db_0}= -2*\sum(Y_{i} - b_0)= \sum(Y_i) - nb_0=0$
+$b_{0}=\overline{Y}$
+
+b-) Prove that the least squares estimator of $\beta_{0}$ is unbiased.(5pts) 
+
+$\overline{Y} ~ N(\beta_0,\frac{\sigma^2}{n})$
+$E(b_0)= E(\overline{Y})=\beta_0$
+
+c-) Prove that the sum of the Y observations is the same as the sum of the fitted values.(5pts) 
+
+$\sum{\hat{Y_i}}=\sum{\overline{Y}}=n\overline{Y}=n\frac{\sum{Y_i}}{n}=\sum{Y_i}$
+
+
+d-) Prove  that the sum of the residuals weighted by the fitted values is zero.(5pts) 
+
+$\sum{\hat{Y_i}e_i}=\sum{\overline{Y}(Y_i-\hat{Y_i})}=\overline{Y}\sum(Y_i-\overline{Y})=0$
+
+## Problem 2
+
+Refer to the Grade point average Data. The director of admissions of a small college selected 120 students at random from the new freshman class in a study to determine whether a student's grade point average (GPA) at the end of the freshman year (Y) can be predicted from the ACT test score (X). (30 points, each part is 5 points)
+
+a-) Obtain a 99 percent confidence interval for $\beta_{1}$. Interpret your confidence interval. Does it include zero? Why might the director of admissions be interested in whether the confidence interval includes zero?
+
+99% confidence interval is $0.0054 \leq \beta_1 \leq 0.072$. It did not include zero, indicating that $\beta_1$ is significant. 
+
+```{r}
+GPA <- read.csv("/cloud/project/Fall 2020/Grade Point Average Data.csv")
+f.gpa<-lm(Y~X,data =GPA)
+confint(f.gpa,level=0.99)
+```
+
+
+b-) Test, using the test statistic $t^{*}$, whether or not a linear association exists between student's ACT score (X) and GPA at the end of the freshman year (Y). Use a level of significance of $\alpha=0.01$. State the alternatives, decision rule, and conclusion.
+
+$H_0 : \beta_1=0$
+$H_a : \beta_1 \neq 0$
+From the summary table below, $t^{*}$=3.04 and p value is 0.00292 < $\alpha=0.01$. Reject, $H_0$. You can alternatively, calculate the critical value of the test, the p value of the test directly, please see below.
+```{r}
+summary(f.gpa)
+qt(1-0.01/2,118)
+2*(1-pt(3.04,118))
+```
+
+c-) What is the P-value of your test in part (b)? How does it support the conclusion reached in part (b)?
+
+see above, part b.
+
+d-)Obtain a 95 percent interval estimate of the mean freshman GPA for students whose ACT test score is 28. Interpret your confidence interval.
+
+Estimated GPA for ACT score of 28 is 3.2. 95% confidence interval for ACT=28 is $3.06 \leq GPA \leq 3.34$.
+
+```{r}
+predict(f.gpa,data.frame(X=28),interval="confidence",level=0.95)
+
+```
+
+
+e-) Mary Jones obtained a score of 28 on the entrance test. Predict her freshman GPA-using a 95 percent prediction interval. Interpret your prediction interval.
+Estimated GPA for ACT score of 28 is 3.2. 95% confidence interval for ACT=28 is $1.96 \leq GPA \leq 4.44$.
+
+```{r}
+predict(f.gpa,data.frame(X=28),interval="prediction",level=0.95, se.fit = FALSE)
+```
+f-) Is the prediction interval in part (e) wider than the confidence interval in part (d)? Should it be?
+   
+Yes, it is wider. The prediction interval will be always wider than confidence interval as the variance is larger for the prediction interval. 
+
+g-) Determine the boundary values of the 95 percent confidence band for the regression line when $X_{h}$ = 28. Is your-confidence band wider at this point than the confidence interval in part (d)? Should it be?
+$W^2= 2F(1=\alpha; 2, n-2) = 2F(0.95; 2, 118) = 2(3.07) = 6.1462$
+$W=2.4792; 3.2012-2.4792*0.0706 \leq \beta_{0}+\beta_{1}X_h \leq 3.2012-2.4792*0.0706$
+$3.0262 \leq \beta_{0}+\beta_{1}X_h \leq 3.3762$
+```{r}
+predict(f.gpa,data.frame(X=28),interval="confidence",level=0.95,se.fit=TRUE)
+W2= 2*qf(1-0.05,2,118) 
+W=sqrt(W2)
+W
+cbind(3.2012-2.4792*0.0706,3.2012+2.4792*0.0706)
+```
+
+## Problem 3
+
+Refer to the Crime rate data. A criminologist studying the relationship between level of education-and crime rate in medium-sized U.S. counties collected the following data for a random sample of 84 counties; X is the percentage of individuals in the county having at least a high-school diploma, and Y is the crime rate (crimes reported per 100,000 residents) last year. (45 points, each part is 5 points)
+
+a-)Obtain the estimated regression function. Plot the estimated regression function and the data. Does the linear regression function appear to give a good fit here? Discuss.
+
+No it does not look like a good fit. High School gradation rate is not a strong variable. The other variables are missing such as unemployment rate, income and etc.
+
+```{r}
+CR <- read.csv("/cloud/project/Fall 2020/Crime Rate.csv")
+f.cr<-lm(Y~X,data=CR)
+plot(CR$X,CR$Y,xlab="HS Degree",ylab="Crime Rate")
+abline(f.cr)
+```
+
+
+b-) Test whether or not there is a linear association between crime rate and percentage of high school graduates, using a t test with $\alpha =0.01$. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+
+$H_0 : \beta_1=0$
+$H_a : \beta_1 \neq 0$
+From the summary table below, $t^{*}$=-4.103 and p value is 0.00009 < $\alpha=0.01$. Reject, $H_0$. You can alternatively, calculate the critical value of the test, the p value of the test directly, please see below.
+
+```{r}
+summary(f.cr)
+qt(0.01/2,82)
+2*pt(-4.103,82)
+```
+
+
+c-) Estimate $\beta_{1}$, with a 99 percent confidence interval. Interpret your interval estimate.
+
+99% confidence interval is $-280.22 \leq \beta_1 \leq -60.94$. It did not include zero, indicating that $\beta_1$ is significant.
+
+```{r}
+confint(f.cr,level=0.99)
+```
+
+d-) Set up the ANOVA table.
+
+see below
+```{r}
+anova(f.cr)
+```
+e-) Carry out the test in part a by means of the F test. Show the numerical equivalence of the two test statistics and decision rules. Is the P-value for the F test the same as that for the t test?
+
+$H_0 : \beta_1=0$
+$H_a : \beta_1 \neq 0$
+
+From the ANOVA table above, $F^{*}=16.834$ and p value is 0.000001 $\leq$ alpha=0.01. Reject $H_{0}$, $\beta_1$ is significant. Yes the p values are the same.
+
+f-) By how much is the total variation in crime rate reduced when percentage of high school graduates is introduced into the analysis? Is this a relatively large or small reduction?
+
+Total Variation is variation of Y is 548,736,107. It was reduced by SSR, the part that explained by the X, 93,462,942 or 93462942/548736107 or 17%.
+
+```{r}
+(length(CR$Y)-1)*var(CR$Y)
+```
+
+g-) State the full and reduced models.
+
+Full model is $Y_{i}=\beta_{0} + \beta_{1} X_{i}$
+Reduced model is $Y_{i}=\beta_{0}$
+
+h-) Obtain (1) SSE(F), (2) SSE(R), (3) dfF. (4) dfR, (5) test statistic F* for the general linear test, (6) decision rule.
+
+From the ANOVA Table above
+
+(1) SSE(F)=455273165
+(2) SSE(R)=548736107
+(3) dfF= 82 
+(4) dfR= 83
+
+$H_0 : \beta_1=0$
+$H_a : \beta_1 \neq 0$
+
+
+$F^*=\frac{SSE(R)-SSE(F)}{df_R-df_F}\div\frac{SSE(F)}{df_F}$
+$F^*=\frac{548736107-455273165}{83-82}\div\frac{455273165}{82}$
+$F^*=16.834$
+
+The test is rejected as the pvalue is less than 0.01 or $16.834 \geq 6.95$
+
+```{r}
+{(548736107-455273165)/(83-82)}/(455273165/82)
+1-pf(16.834,1,82)
+qf(0.99,1,82)
+```
+
+i-)Are the test statistic F* and the decision rule for the general linear test numerically equivalent to those in part a?
+
+Yes, they are equivalent.

@@ -1,0 +1,358 @@
+---
+title: "LAB4"
+author: "RGT"
+date: "10/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+```
+
+## Before we start:
+
+*Create a sub-directory in your computer
+*Open CANVAS and look for the data 
+*Read specs see below-rephrase the problem with your own words
+*Master story telling and enjoy the process
+
+# Piazza Questions:
+
+HW3 solutions-next.
+
+Does transformation of the residuals, response variables or explanatory variable matter?
+
+Do we have always to transform back?
+
+When we use transformations?
+
+HW4 questions-at the end.
+
+#Comments:Depending on your story you may chose different transformations to sell your research. 
+Example1.-Suppose a data scientist is modeling a production of face masks (y) using capital (k) and labor (l)
+his friend is an economist and told him that production technology behaves like y=k*l^alpha.
+
+Investigate the impact of a new technology in the production in units of face masks that results
+from an increase of 1% in the labor force. Assume that capital is constant (k=1). 
+
+You decide to use the linear model and estimating y=ln(k)+alpha*ln(l)+epsilon, a semi-logarithmic model,
+and you find that your estimated alpha is 5.
+
+Interpretation: we expect a 1 percent increase in labor
+to yield 5*log(1.01) unit increase in Y.
+
+Interpretation what is the unit change when labor changes in one percent.
+
+When you try to identify outliers or extreme observations you may also transform.
+For example graph semistudentized residuals. You may have a too broad response variable then you
+may take logs.
+
+You may find useful to transform back or not. Depends on the problem.
+
+## Review HW3 solutions
+Q1.Five observations on Y are to be taken when X = 4, 8, 12, 16, and 20, respectively. The true regression function is E(Y} = 20 + 4X, and the $\epsilon_i$ are independent N(O, 25). 
+a-c) Generate five normal random numbers (use set.seed(1023)), with mean 0 and variance 25. Consider these random numbers as the error terms for the five Y observations at X = 4,8, 12, 16, and 20 and calculate $Y_1$, $Y_2$, $Y_3$, $Y_4$ , and $Y_5$. (a) Obtain the least squares estimates $b_0$ and $b_1$, when fitting a straight line to the five cases. Also calculate $Y_h$ when $X_h$ = 10 and obtain a 95 percent confidence interval for E($Y_h$) when $X_h$ = 10.
+(b) Repeat 200 times. (c)Do an histogram of b1, does it make theoretical sense?
+  ##Solution: 
+  $b_0$ is 22.38 and $b_1$ is 3.87. The predicted value is 61.09 for $X_h$ = 10. The 95 percent confidence interval is $51.74121 
+```{r hw3}
+x=c(4,8, 12, 16,20)
+#r function is rnorm(n, mean = 0, sd = 1)#
+set.seed(1023)
+ei<-rnorm(5,0,5)
+yi<-20 + 4*x+ei
+f<-lm(yi~x)
+summary(f)
+predict(f,data.frame(x=10),interval ="confidence",conf.level=.95)
+
+prg.hw2<-function(x,y,n){
+  out<-matrix(0,nrow=n,ncol=5)
+  for (i in 1:n){ 
+    ei<-rnorm(5,0,5)
+    yi<-20 + 4*x+ei
+    f<-lm(yi~x)
+    out[i,1:2]=f$coefficients
+    out[i,3:5]=predict(f,data.frame(x=10),interval ="confidence",conf.level=.95)
+  }
+  dimnames(out)[[2]]<-c("b0","b1","yhat","Lb","Ub")
+  out
+}
+b1<-prg.hw2(x,y,200)
+
+hist(b1[,2])
+apply(b1,2,mean)
+sqrt(apply(b1,2,var))
+
+sum(I(b1[,4]<=60)*I(b1[,5]>=60))/200
+Bdata=data.frame(b1)
+library(ggplot2)
+ggplot(data=Bdata,aes(x=b1, fill ='binned')) + geom_histogram(binwidth = 0.075)
+```
+## Q2.Refer to the CDI data set. The number of active physicians in a CDI (Y) is expected to be related to total population, number of hospital beds, and total personal income. Using $R^2$ as the criterion, which predictor variable accounts for the largest reduction in the variability in the number of active physicians? Solution: The R^2 at f32 regression shows the number of beds variable has larger explained variance than alternatives and and therefore lower variance in estimated B and thus it is "better" in reducing the unexplained variability.
+```{r Q2}
+library(readr)
+CDI<- read_csv("CDI Data.csv")
+head(CDI)
+attach(CDI)
+CDI=data.frame(CDI)
+
+Y<-CDI$Number.of.active.physicians
+X1=CDI$Total.population
+X2=CDI$Number.of.hospital.beds
+X3=CDI$Total.personal.income
+
+f31<-summary(lm(Y~X1))
+f32<-summary(lm(Y~X2))
+f33<-summary(lm(Y~X3))
+rbind(f31$r.squared,f32$r.squared,f33$r.squared)
+```
+Q3. For each geographic region, regress per capita income in a CDI(Y) against the percentage of individuals in a county having at least a bachelor's degree (X). Obtain a separate interval estimate of $\beta_1$, for each region. Use a 90 percent confidence coefficient in each case. Do the regression lines for the different regions appear to have similar slopes?
+##Solution:
+The confidence intervals for region 1 and 4 are overlapping. The confidence intervals for region 3 and 4 are overlapping. The slope for region 2 is different from region 1,3 and 4. 
+```{r Q3}
+CDI1<-CDI[CDI$Geographic.region==1,]
+CDI2<-CDI[CDI$Geographic.region==2,]
+CDI3<-CDI[CDI$Geographic.region==3,]
+CDI4<-CDI[CDI$Geographic.region==4,]
+
+X41=CDI1$Per.capita.income
+X51=CDI1$Percent.bachelor.s.degrees
+
+X42=CDI2$Per.capita.income
+X52=CDI2$Percent.bachelor.s.degrees
+
+X43=CDI3$Per.capita.income
+X53=CDI3$Percent.bachelor.s.degrees
+
+X44=CDI4$Per.capita.income
+X54=CDI4$Percent.bachelor.s.degrees
+
+r1<-lm(X41~X51)
+r2<-lm(X42~X52)
+r3<-lm(X43~X53)
+r4<-lm(X44~X54)
+
+new.par=par(mfrow=c(2,2))
+
+plot(X51,X41,main="Region 1",xlab="Percent bachelor degree",ylab="Per capita income",xlim=c(0,57), ylim=c(7000,37000))
+abline(r1)
+
+plot(X52,X42,main="Region 2",xlab="Percent bachelor degree",ylab="Per capita income",xlim=c(0,57), ylim=c(7000,37000))
+abline(r2)
+
+plot(X53,X43,main="Region 3",xlab="Percent bachelor degree",ylab="Per capita income",xlim=c(0,57), ylim=c(7000,37000))
+abline(r3)
+
+plot(X54,X44,main="Region 4",xlab="Percent bachelor degree",ylab="Per capita income",xlim=c(0,57), ylim=c(7000,37000))
+abline(r4)
+
+new.par
+
+c1=confint(r1,"X51",level=.90)
+c2=confint(r2,"X52",level=.90)
+c3=confint(r3,"X53",level=.90)
+c4=confint(r4,"X54",level=.90)
+
+con_fr<-rbind(c1,c2,c3,c4)
+con_fr
+```
+Q4.In a small-scale regression study, five observations on Y were obtained corresponding to X = 1, 4,10, ll, and 14. Assume that $\sigma$ = .6, $\beta_0$ = 5, and $\beta_1$, = 3. (a) What are the expected values MSR and MSE? (b)For determining whether or not a regression relation exists, would it have been better or worse to have made the five observations at X = 6,7, 8, 9, and 1O? Why? Would the same answer apply if the principal purpose were to estimate the mean response for X = 8?
+##Solution:
+Yes it matters, one regression by design (X=8 is part of the design) has larger variance in the Xes and and therefore lower variance in estimated B and thus "better". Regarding principal purpose of estimate mean response of X = 8. Because, both data set has mean value of X = 8, and linear regression line passes through( ̄X, ̄Y), answer of selecting first data set should remain valid. The wider range of values of x means that you can more accurately calculate the slope of the association of the two variables. 
+```{r Q4}
+mse=0.6^2
+x=c(1,4,10,11,14)
+ssx=4*var(x)
+msr=mse+9*4*var(x)
+a<-cbind(mse,msr)
+
+
+mse=0.6^2
+x=seq(6:10)
+ssx=4*var(x)
+msr=mse+9*4*var(x)
+b<-cbind(mse,msr)
+
+compare_ab<-rbind(a,b)
+compare_ab
+```
+NEXT- Normal QQ-Plot, BoxCox, Breusch-Pagan Test and Brown-Forsythe Test
+
+#Refer to the Prostate cancer data set (prostate_dat.xls). A university medical center urology group was interested in the association between prostate-specific antigen (PSA) and a number of prognostic clinical measurements in men with advanced prostate cancer. Data were collected on 97 men who were about to undergo radical prostectomies. Each line of the data set has an identification number and provides information on 8 other variables for each person. Open prostate_desc.txt for details.
+
+```{r sample}
+library(readxl)
+prostate_dat <- read_excel("prostate_dat.xls")
+head(prostate_dat)
+
+attach(prostate_dat)
+prostate_dat=data.frame(prostate_dat)
+#sample
+set.seed(1023)
+ind<-sample(c(1:97),68)
+samp<-prostate_dat[ind,]
+```
+Using the sample, build a regression model to predict to predict PSA level (Y) as a function of cancer volume (X). The analysis should include an assessment of the degree to which the key normal regression assumptions are satisfied: (-1) normal linear regression model is appropriate for the problem. The estimated errors (residuals) are independent from the X and from the estimated values Y_hat. (0) Errors are iid~N(0,sigma) that is the errors are independent and identically normally distributed; (1) Error terms have constant variance and mean=0. 
+##Solution:
+```{r original}
+library(MASS)
+Y=samp$psa
+X1=samp$cavol
+plot(X1,Y,xlab="Cancer volume",ylab="PSA level")
+
+f<-lm(Y~X1)
+summary(f)
+
+ei=f$residuals
+yhat=f$fitted.values
+
+newer.par=par(mfrow=c(2,2))
+plot(X1,ei,xlab="Cancer volume",ylab="Residual")
+plot(f)
+plot(X1,Y,xlab="Cancer volume",ylab="PSA level")
+abline(f)
+plot(yhat,ei,xlab="Predicted Values",ylab="Residuals")
+boxplot(ei,horizontal=TRUE,staplewex=0.5,col=3,xlab="Residual")
+
+error.std = rstandard(f)
+qqnorm(error.std,ylab="Standardized Residuals",xlab="Normal Scores") 
+newer.par
+```
+# remediation1
+```{r box}
+boxcox(f,lambda=seq(0.1,0.7,0.1))
+f0<-lm(Y^(.2)~X1,data=samp)
+summary(f0)
+
+ei=f0$residuals
+yhat=f0$fitted.values
+
+old.par=par(mfrow=c(2,2))
+plot(X1,Y^(.2),xlab="Cancer volume",ylab="PSA transformed")
+abline(f0)
+plot(yhat,ei,xlab="Predicted Values",ylab="Residuals")
+boxplot(ei,horizontal=TRUE,staplewex=0.5,col=3,xlab="Residual")
+error.std = rstandard(f0)
+qqnorm(error.std,ylab="Standardized Residuals",xlab="Normal Scores") 
+
+
+boxcox(f0,lambda=seq(0.1,0.7,0.1))
+old.par
+```
+# remediation2-take the logs
+```{r logs}
+LY=samp$lpsa
+LX1=samp$lcavol
+f1<-lm(LY~LX1)
+summary(f1)
+
+ei=f1$residuals
+yhat=f1$fitted.values
+
+new.par3=par(mfrow=c(2,2))
+plot(LX1,ei,xlab="Cancer volume",ylab="Residual")
+plot(f1)
+plot(LX1,LY,xlab="Log of Cancer volume",ylab="Log of PSA level")
+abline(f1)
+plot(yhat,ei,xlab="Predicted Values",ylab="Residuals")
+boxplot(ei,horizontal=TRUE,staplewex=0.5,col=3,xlab="Residual")
+error.std = rstandard(f1)
+qqnorm(error.std,ylab="Standardized Residuals",xlab="Normal Scores",main="Prostate Cancer Data") 
+new.par3
+```
+#Ho: Errors are Normal, Pvalue>0.05 ==>Not sufficient statistical evidence to reject the null using Shapiro-Wilk test
+```{r Shapiro test}
+shapiro.test(ei)
+```
+#Test of constancy of Error Variance Brown-Forsythe Test why? Because errors seem to growth with the X variable. install.packages("onewaytests")bf.test(formula, data, alpha = 0.05) ~ t(66,.05) Ho:Error variance is constant. Here Abs(t*=0.561)<1.99 We have no sufficient evidence of changing variance. Test effectiveness depends on sample size.
+```{r Brown-Forsythe test}
+install.packages("onewaytests")
+library(onewaytests)
+bf.data<-data.frame(cbind(samp,ei,yhat))
+dimnames(bf.data)[[2]][16]
+dimnames(bf.data)[[2]][16:17]
+dimnames(bf.data)[[2]][16:17]<-c("residuals","fitted.values")
+
+bf.data1<-data.frame(cbind(bf.data,ind=as.factor(I(bf.data$lcavol<=median(bf.data$lcavol))*1))) 
+bf.test(residuals~ind,data=bf.data1) 
+qt(1-.05/2,66)
+```
+#Second test Breush-Pagan helps to detect "Heteroscedasticity" of non-constant variance variation with certain direction, the null hypothesis is H0:gamma1=0, simple model on the log of residual variance and the independent variables Xi. Equation is log(sigma^2)=c+gamma1*Xi Use the statistic is compared against the qui Square tables.BP = 1.0747, df = 1, p-value = 0.2999>0,05 ==> Can not reject null.
+```{r Breush-Pagan test}
+library(lmtest)
+install.packages("lmtest")
+bptest(f1)
+```
+#Equation in original
+```{r map the estimated coefficients to original problem}
+b0=exp(1.50059)
+b1=exp(0.71560)
+```
+If the regression assumptions are not met, include and justify appropriate remedial measures. Take logs improves the goodness of fit. QQ plot indicates departure from normality. Boxcox transformation showed some transformation was needed.Taking logs on both response and explanatory variables is the right transformation. After the transformation QQ plot and other testing indicates normality. Models are significant. $R^2$'s are around 50% but this is a cross section so it may be not too bad.. Transformed model did increase the model power.
+Use the final model to estimate mean PSA level for a patient whose cancer volume is 20 cc. Assess the strengths and weaknesses of the final model.
+### Solutions:
+                       (Intercept)      Cancer Volume
+[original model]        -0.05897        3.61358 
+[final model]            4.48433        2.04541
+```{r compare original and log in original units}
+origPSA20=-0.05897+3.61358*(20)
+finaPSA20=4.48433+2.04541*(20)
+
+compare_of<-rbind(origPSA20,finaPSA20)
+compare_of
+```
+#Express the estimated regression function in the original units. We expect a 1 percent increase in cancer volume to yield 0.71560*log(1.01) unit increase in Y of 0.007%
+```{r compare}
+summary(f1)
+a=0.71560*log(1.01)
+a
+```
+## Review HW4 problems
+## Problem 1
+
+Refer to the Real estate sales data set. Obtain a random sample of 200 cases from the 522 cases in this data set (use set.seed(1023) before selecting the sample). Using the random sample, build a regression model to predict sales price (Y) as a function of finished square feet (X). The analysis should include an assessment of the degree to which the key regression assumptions are satisfied. If the regression assumptions are not met, include and justify appropriate remedial measures. Use the final model to predict sales price for two houses that are about to come on the market: the first has X = 1100 finished square feet and the second has X = 4900 finished square feet. Assess the strengths and weaknesses of the final model. (25 points)
+
+## Problem 2
+
+Refer to the Production time data. In a manufacturing study, the production times for 111 recent production runs were obtained. The production time in hours (Y) and the production lot size (X) are recorded for each run. (25 points, 5 points each)
+a-) Prepare a scatter plot of the data Does a linear relation appear adequate here? Would a
+transformation on X or Y be more appropriate here? Why?
+  b-) Use the transformation $X^{'} =\sqrt{X}$ and obtain the estimated linear regression function for the
+transformed data.
+c-) Plot the estimated regression line and the transformed data. Does the regression line appear
+to be a good fit to the transformed data?
+d-) Obtain the residuals and plot them against the fitted values. Also prepare a normal probability
+plot. What do your plots show?
+e-)Express the estimated regression function in the original units.
+
+
+## Problem 3
+
+Refer to the Sales growth data. A marketing researcher studied annual sales of a product that had been introduced
+10 years ago. The data are as follows, where X is the year (coded) and Y is sales in thousands.(25 points, 5 points each).
+a-) Prepare a scatter plot of the data. Does a linear relation appear adequate here? Use the Box-Cox procedure and standardization to find an appropriate power transformation of Y. Evaluate SSE for $\lambda$ = .3, .4, .5, .6, .7. What transformation of Y is suggested? 
+b-) Use the transformation $Y^{'}$ = $\sqrt{Y}$ and obtain the estimated linear regression function for the
+transformed data.
+c-) Plot the estimated regression line and the transformed data. Does the regression line appear
+to be a good fit to the transformed data?
+d-) Obtain the residuals and plot them against the fitted values. Also prepare a normal probability
+plot. What do your plots show?
+e-) Express the estimated regression function in the original units.
+
+## Problem 4
+
+The following data were obtained in a study of the relation between diastolic
+blood pressure (Y) and age (X) for boys 5 to 13 years old. (25 points)
+
+X<-c(5,8,11,7,13,12,12,6)
+Y<-c(63,67,74,64,75,69,90,60)
+a-) Assuming normal error regression model is appropriate, obtain the estimated regression
+function and plot the residuals $e_i$ against $X_i$. What does your plot residual plot show? (5 points)
+b-) Omit case 7 from the data and obtain the estimated regression function based on the remaining
+seven cases. Compare this estimated regression function to that obtained in part (a). What
+can you conclude about the effect of case 7? (10 points)
+c-) Using your fitted regression function in part (b), obtain a 99 percent prediction interval for
+a new Y observation at X = 12. Does observation $Y_{7}$ fall outside this prediction interval?
+What is the significance of this? (10 points)
+

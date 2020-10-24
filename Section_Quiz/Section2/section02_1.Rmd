@@ -1,0 +1,303 @@
+---
+title: 'CSCI E-106: Section 02'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 1.20. Copier maintenance. 
+\textbf{The Tri-City Office Equipment Corporation sells an imported copier on a franchise basis and performs preventive maintenance and repair service on this copier. The data below have been collected from 45 recent calls on users to perform routine preventive maintenance service; for each call, X is the number of copiers serviced and Y is the total number of minutes spent by the service person. Assume that first-order regression model (1.1) is appropriate.}
+
+
+## \#Loading Data
+```{r problem 1.20 load data}
+# Assigning the data to a data frame object
+# called df20 and then we want to name the columns
+df20 = read.delim("/cloud/project/Fall 2020/CH01PR20.txt", header=FALSE, sep="")
+colnames(df20) = c("y", "x")
+```
+
+
+## a. Obtain the estimated regression function.
+### Solution
+
+```{r problem 1.20a}
+lmFit20 = lm(y~x, df20)
+print(summary(lmFit20))
+```
+We see that to obtain our estimated regression function we would use the estimate column values so our answer would become: -.5802 + 15.0352x 
+
+
+## b. Plot the estimated regression function and the data. How well does the estimated regression function fit the data?
+
+### Solution
+
+```{r problem 1.20b}
+plot(df20$x, df20$y, xlab="Copiers", ylab="Minutes")
+abline(lmFit20)
+```
+
+By just looking at our data we do  have a well fit line here. 
+
+## c. Interpret $b_o$ in your estimated regression function. Does $b_o$ provide any relevant information here? Explain.
+
+### Solution
+
+```{r problem 1.20c}
+yHat = predict(lmFit20, data.frame(x=0))
+print(yHat)
+```
+$b_0$ does not give us any sensible information since the predicted value is a negative number
+
+## d. Obtain a point estimate of the mean service time when $X = 5$ copiers are serviced.
+
+### Solution
+
+```{r problem 1.20d}
+yHat = predict(lmFit20, data.frame(x=5))
+print(yHat)
+```
+
+
+
+# 1.21. Airfreight breakage. 
+\textbf{A substance used in biological and medical research is shipped by air- freight to users in cartons of 1,000 ampules. The data below, involving 10 shipments, were collected on the number of times the carton was transferred from one aircraft to another over the shipment route $(X)$ and the number of ampules found to be broken upon arrival $(Y)$. Assume that first-order regression model (1.1) is appropriate.}
+
+## \#Loading Data
+
+```{r problem 1.21 load data}
+df21 = read.delim("/cloud/project/Fall 2020/CH01PR21.txt", header=FALSE, sep="")
+# df21_1 = read.table("CH01PR21.txt")
+colnames(df21) = c("y", "x")
+```
+
+## a. Obtain the estimated regression function. Plot the estimated regression function and the data. Does a linear regression function appear to give a good fit here?
+
+### Solution
+
+```{r problem 1.21a}
+lmFit21 = lm(y~x, df21)
+print(summary(lmFit21))
+
+plot(df21$x, df21$y, xlab="Shipment", ylab="Ampules")
+abline(lmFit21)
+```
+
+We see that our regression function is $y = 10.2 + 4.0 x$
+
+## b. Obtain a point estimate of the expected number of broken ampules when $X = 1$ transfer is made.
+
+### Solution
+
+```{r problem 1.21b}
+yHat1 = predict(lmFit21, data.frame(x=1))
+print(yHat1)
+```
+
+## c. Estimate the increase in the expected number of ampules broken when there are 2 transfers as compared to 1 transfer.
+
+### Solution
+
+```{r problem 1.21c}
+yHat2 = predict(lmFit21, data.frame(x=2))
+print(yHat1) #value when x = 1
+print(yHat2) #value when x = 2
+print(yHat2 - yHat1)
+
+```
+
+## d. Verify that your fitted regression line goes through the point ($\bar{X}$, $\bar{Y}$).
+
+### Solution
+```{r problem 1.21d}
+meanX = mean(df21$x)
+meanY = mean(df21$y)
+
+# Same thing, different notation
+apply(df21, 2, mean)
+
+print("xbar: ", meanX)
+print("ybar: ", meanY)
+
+print(predict(lmFit21, data.frame(x=meanX)))
+
+#or we can simply look at the fitted data by using the Fitted Function
+fitted(lmFit21) 
+
+```
+
+
+# 1.24. Refer to _Copier maintenance_ Problem 1.20.
+
+## a Obtain the residuals $e_i$ and the sum of the squared residuals $\sum{e}_i^2$. What is the relation between the sum of the squared residuals here and the quantity Q in (1.8)?
+
+### Solution
+
+```{r problem 1.24a}
+yHat = predict(lmFit20)
+
+resids = (df20$y - yHat)
+print(resids)
+
+# Same thing, different syntax
+# resids = lmFit20$residuals
+# print(resids)
+
+#Sum of the squared residuals 
+SSE = (sum(resids^2))
+print(SSE)
+
+```
+
+## b. Obtain point estimates of $\sigma^2$ and $\sigma$. In what units is $\sigma$ expressed?
+
+### Solution 
+
+```{r problem 1.24b}
+
+# Degrees of freedom residual
+dfResid = lmFit20$df.residual
+MSE = (SSE/dfResid)
+print(MSE)
+
+
+# Obtain original units
+sqrt(MSE)
+
+# We can also see sigma ^2 by using the anova function
+anova(lmFit20)
+
+#mean is expressed in the units of minutes. 
+```
+
+
+# 1.25. Refer to _Airfreight breakage_ Problem 1.21.
+
+## a. Obtain the residual for the first case. What is its relation to $\epsilon_i$?
+
+### Solution
+
+```{r problem 1.25a}
+yHat = predict(lmFit21)
+
+resids = (df21$y - yHat)
+
+# Same thing, different syntax
+# resids = lmFit21$residuals
+# print(resids)
+
+print(resids[1])
+```
+
+## b. Compute $\sum{e}_i^2$ and $MSE$. What is estimated by $MSE$?
+
+### Solution
+
+```{r problem 1.25b}
+SSE = (sum(resids^2))
+       
+# Degrees of freedom residual
+dfResid = lmFit21$df.residual
+
+MSE = (SSE/dfResid)
+print(MSE)
+
+# To obtain original units, take the sqrt
+# sqrt(MSE)
+```
+
+
+# 1.27. Muscle mass. 
+\textbf{A person's muscle mass is expected to decrease with age. To explore this rela- tionship in women, a nutritionist randomly selected 15 women from each lO-year age group, beginning with age 40 and ending with age 79. The results follow; $X$ is age, and $Y$ is a measure of muscle mass. Assume that first-order regression model (1.1) is appropriate.}
+
+## \#Loading Data
+
+```{r problem 1.27 loading data}
+df27 = read.delim("CH01PR27.txt", header=FALSE, sep="")
+colnames(df27) = c("y", "x")
+```
+
+## a. Obtain the estimated regression function. Plot the estimated regression function and the data. Does a linear regression function appear to give a good fit here? Does your plot support the anticipation that muscle mass decreases with age?
+
+### Solution
+
+```{r problem 1.27a}
+lmFit27 = lm(y~x, df27)
+print(summary(lmFit27))
+
+plot(df27$x, df27$y, xlab="Age", ylab="Muscle Mass")
+abline(lmFit27)
+```
+
+So $y = 156.34 - 1.19x$
+Assessing the plot, it does appear to support the anticipation that muscle mass decreases with age.
+
+## b. Obtain the following: (1) a point estimate of the difference in the mean muscle mass for women differing in age by one year, (2) a point estimate of the mean muscle mass for women aged $X =60$ years, (3) the value of the residual for the eighth case, (4) a point estimate of $\sigma^2$.
+
+### Solution
+
+```{r problem 1.27b}
+
+# 1
+beta1 = lmFit27$coefficients[2]
+print(beta1)
+
+
+# 2
+yHat = predict(lmFit27, data.frame(x=60))
+print(yHat)
+
+
+# 3
+yHat = predict(lmFit27)
+
+resids = (df27$y - yHat)
+print(resids)
+
+# Same thing, different syntax
+# resids = lmFit27$residuals
+# print(resids)
+
+print(resids[8])
+
+
+# 4
+# Degrees of freedom residual
+dfResid = lmFit27$df.residual
+SSE = (sum(resids^2))
+
+MSE = (SSE/dfResid)
+print(MSE)
+
+
+```
+
+# 1.38. Airfreight Breakage. 
+\textbf{In Airfreight breakage Problem 1.21, the least squares estimates are $b_{0} = 10.20$ and $b_{1} = 4.00$, and $\sum{e_{i}^2}= 17.60$. Evaluate the least squares criterion Q in for the estimates 
+ (1) $b_{0}=9$,$b_{l} = 3$; 
+(2)  $b_{0}=11$,$b_{l} =5$.
+Is the criterion Q larger for these estimates than for the least squares estimates?
+### Solution
+
+```{r problem 1.38}
+
+# 1
+e1=df21$y-(9+3*df21$x)
+Q1=sum(e1^2)
+Q1
+# 2
+e2=df21$y-(11+5*df21$x)
+Q2=sum(e2^2)
+Q2
+cbind(Q1,Q2,17.60)
+#Yes,least squares estimation minimizes the sum of squres of error
+```
+
+
+

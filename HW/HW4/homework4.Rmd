@@ -1,0 +1,331 @@
+---
+title: 'CSCI E-106:Assignment 4'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: October 5, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Problem 1
+
+Refer to the Real estate sales data set. Obtain a random sample of 200 cases from the 522 cases in this data set (use set.seed(1023) before selecting the sample). Using the random sample, build a regression model to predict sales price (Y) as a function of finished square feet (X). The analysis should include an assessment of the degree to which the key regression assumptions are satisfied. If the regression assumptions are not met, include and justify appropriate remedial measures. Use the final model to predict sales price for two houses that are about to come on the market: the first has X = 1100 finished square feet and the second has X = 4900 finished square feet. Assess the strengths and weaknesses of the final model. (25 points)
+
+```{r}
+# clear environment and basic setup
+rm(list = ls())
+
+library(knitr)
+# set folder in which code and data are stored as working directory before running
+setwd("~/OneDrive/courses/e106/HW/HW4")
+
+real <- read.csv('Real Estate Data.csv')
+head(real)
+dim(real)
+colnames(real)
+
+# create sample df
+set.seed(1023)
+ind <- sample(1:nrow(real),200)
+df1 <- real[ind,]
+dim(df1)
+
+# build regression and analysis
+y <- df1$Sales.price
+x1 <- df1$Finished.square.feet
+reg_q1 <- lm(y~x1)
+ei_p1 <- reg_q1$residuals
+summary(reg_q1)
+
+newer.par = par(mfrow = c(2,2))
+plot(reg_q1)
+newer.par
+
+newer.par = par(mfrow = c(2,2))
+plot(x1,y, xlab = 'finished square feet x1', ylab = 'Sales Price')
+plot(x1,ei_p1, xlab = 'finished square feet x1', ylab = 'residuals')
+boxplot(ei_p1, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residual')
+hist(ei_p1)
+newer.par
+```
+At first glance the regression appears to be a good fit to the data. We see that R2 is 0.7326, F-Stat is 542 and the p-value for x1 is <2e-16. The scatter plot of finished square feet and sales price also tends to support this conclusion
+
+However, a deeper look at the other residual plots to verify if the regression assumptions are satisfied paints a different picture. We see details below
+
+Sales Price (y) vs finished square feet (x1) plot shows a relationship that is non-linear for larger sizes. The residuals are closely associated with finished square feet initially for smaller size and diverge for larger sizes. 
+
+Residual vs finished square feet (x1) plot shows the residuals diverging from the fitted values for higher range and are hence not random
+
+Residual vs fitted Sales price (y1_hat) plot shows a change in the shape of the fitted line which is not random
+
+Q-Q plot is not a 45 degree line
+
+Boxplots are not symmetrical and in similar pattern to above they show higher presence of outliers for higher fitted values
+
+Histogram of residuals also shows a right tailed distribution
+
+Hence we conclude that the following assumptions are not satisfied
+
+1. Linearity of the regression function
+2. Error terms have constant variance
+3. Error terms are normally distributed
+4. Error terms are independent
+
+From the scatter plot we see that the values are close to each other for lower values and spread out for higher values. Hence, we take log transform to have a relationship where values are equally spread out. We explore various log transforms below
+
+```{r}
+newer.par = par(mfrow = c(2,2))
+plot(x1,y)
+plot(log(x1),y)
+plot(x1, log(y))
+plot(log(x1), log(y))
+newer.par
+```
+From the plots above we see that taking log of both x1 and y gives us a plot that most resembles a linear relationship.
+
+```{r}
+reg2_p1 =  lm(log(y)~log(x1))
+summary(reg2_p1)
+ei_p1_log <- reg2_p1$residuals
+
+newer.par <- par(mfrow = c(2,2))
+plot(reg2_p1)
+newer.par
+
+newer.par <- par(mfrow = c(1,1))
+plot(x1, ei_p1_log, xlab = 'Finished Square Feet', ylab = 'Residuals')
+boxplot(ei_p1_log, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals')
+newer.par
+```
+From the regression summary we see that 
+
+1. R2 has increased to 0.7697 vs 0.7326 earlier
+2. F-Statistic has increased to 776.1 vs 542.4 earlier
+3. Residual vs fitted value plot (y1_hat) is randomly distributed 
+4. Residual vs finished square feet plot (x1) is randomly distributed
+5. Q-Q plot closer to the 45 degree line for upto 2 SD
+6. Boxplot is much more symmetrical
+
+This indicates that the critical regression assumptions are satisfied. We now use it to predict the final sales price 
+
+Prediction for x = 1100 and x = 4900
+
+```{r}
+exp(predict(reg2_p1, data.frame(x1 = c(1100,4900)), interval = 'prediction',level = 0.99))
+```
+
+The final model with log transform of both X & Y is more robust than the simple regresison
+
+From the regression summary of both we see that 
+
+1. R2 has increased to 0.7697 vs 0.7326 earlier
+2. F-Statistic has increased to 776.1 vs 542.4 earlier
+3. Residual vs fitted value plot (y1_hat) is randomly distributed 
+4. Residual vs finished square feet plot (x1) is randomly distributed
+5. Q-Q plot closer to the 45 degree line for upto 2 SD
+6. Boxplot is much more symmetrical
+
+This indicates that the critical regression assumptions are satisfied. 
+
+It also indicates that the model is a better fit.
+
+## Problem 2
+
+Refer to the Production time data.  In a manufacturing study, the production times for 111 recent production runs were obtained. The production time in hours (Y) and the production lot size (X) are recorded for each run. (25 points, 5 points each)
+
+a-) Prepare a scatter plot of the data Does a linear relation appear adequate here? Would a
+transformation on X or Y be more appropriate here? Why?
+
+```{r}
+# read in data
+prod <- read.csv('Production Time Data.csv')
+dim(prod)
+head(prod)
+
+plot(prod$X,prod$Y, xlab = 'Production Lot size', ylab = 'Production Time')
+```
+There is evidence of linearity in the relationship but further transformation would be needed to improve the quality of the fit. This is due to the fact that values of Production Time (Y) are scattered at higher lot sizes and closer for smaller values of Production Lot size (X). 
+
+b-) Use the transformation $X^{'} =\sqrt{X}$ and obtain the estimated linear regression function for the transformed data.
+
+```{r}
+reg_2a <- lm(prod$Y~sqrt(prod$X))
+ei_p2 <- reg_2a$residuals
+summary(reg_2a)
+
+```
+The estimated regression function is Y = 1.2547 + 3.6235 * Sqrt(X)
+
+c-) Plot the estimated regression line and the transformed data. Does the regression line appear to be a good fit to the transformed data?
+
+```{r}
+plot(sqrt(prod$X), prod$Y, xlab = 'Production Lot Size', ylab = 'Production time hours')
+abline(reg_2a, col = 'red')
+```
+Based on visual observation the line appears to be a good fit. Also from the regression summary in 2b we see the R2 = 0.7704, F-Stat = 365.7 and p-value for coefficient < 2e-16 
+d-) Obtain the residuals and plot them against the fitted values. Also prepare a normal probability plot. What do your plots show?
+
+```{r}
+new.par = par(mfrow = c(2,2))
+plot(reg_2a)
+new.par
+
+newer.par <- par(mfrow = c(2,2))
+plot(sqrt(prod$X), ei_p2, xlab = 'Production Lot Size', ylab = 'Residuals')
+boxplot(ei_p2, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals')
+hist(ei_p2)
+newer.par
+
+```
+Based on the plots above we see that key regression assumptions are met and the regression line is a good fit since the
+
+1. Residual vs fitted value plot is normally distributed
+2. Residual vs production lot size is also normally distributed
+3. Q-Q plot tracks a 45 degree line
+4. Boxplot is also symmetrical
+
+e-)Express the estimated regression function in the original units.
+
+The regression function is expressed as 
+
+Production Time hrs (Y) = 1.2547 + 3.6235 * Sqrt(Production Lot Size X)
+
+## Problem 3
+
+Refer to the Sales growth data. A marketing researcher studied annual sales of a product that had been introduced
+10 years ago. The data are as follows, where X is the year (coded) and Y is sales in thousands. (25 points, 5 points each)
+
+a-) Prepare a scatter plot of the data. Does a linear relation appear adequate here? Use the Box-Cox procedure and standardization to find an appropriate power transformation of Y. Evaluate SSE for $\lambda$ = .3, .4, .5, .6, .7. What transformation of Y is suggested? 
+
+```{r}
+library(MASS)
+library(ALSM)
+
+sales <- read.csv("Sales Growth Data.csv")
+dim(sales)
+head(sales)
+
+reg_p3 <- lm(sales$Y~sales$X)
+ei_p3 <- reg_p3$residuals
+summary(reg_p3)
+plot(sales$X, sales$Y, xlab = 'Year', ylab = 'Sales')
+abline(reg_p3, col = 'red')
+
+boxcox(reg_p3, lambda = seq(0.3, 0.7,0.1))
+boxcox.sse(sales$X, sales$Y, l = seq(0.3, 0.7,0.1))
+```
+Linear relation appears appropriate here. However,  boxcox procedure suggests transformation Y' = sqrt(Y) since it returns lambda = 0.5
+
+b-) Use the transformation $Y^{'}$ = $\sqrt{Y}$ and obtain the estimated linear regression function for the transformed data.
+
+```{r}
+reg_3b <- lm(sqrt(sales$Y)~sales$X)
+summary(reg_3b)
+ei_3b <- reg_3b$residuals
+```
+The estimated regression function is sqrt(Sales) = 10.26093 + 1.07629 * (Year)
+
+c-) Plot the estimated regression line and the transformed data. Does the regression line appear to be a good fit to the transformed data?
+
+```{r}
+plot(sales$X, sqrt(sales$Y), xlab = 'Year', ylab = 'Sqrt Sales')
+abline(reg_3b, col = 'red')
+
+```
+
+d-) Obtain the residuals and plot them against the fitted values. Also prepare a normal probability plot. What do your plots show?
+
+```{r}
+new.par = par(mfrow = c(2,2))
+plot(reg_3b)
+new.par
+
+newer.par <- par(mfrow = c(2,2))
+plot(sales$X, ei_3b, xlab = 'Year', ylab = 'Residuals')
+boxplot(ei_3b, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals')
+hist(ei_3b)
+newer.par
+
+```
+Based on the plots above we see that key regression assumptions are met and the regression line is a good fit since the
+
+1. Residual vs fitted value plot is normally distributed
+2. Residual vs production lot size is also normally distributed
+3. Q-Q plot tracks a 45 degree line
+4. Boxplot is also symmetrical
+
+e-) Express the estimated regression function in the original units.
+
+Sales in Thousands (Y) = [10.26093 + 1.07629 * (Year)]^2
+
+## Problem 4
+
+The following data were obtained in a study of the relation between diastolic
+blood pressure (Y) and age (X) for boys 5 to 13 years old. (25 points)
+
+X<-c(5,8,11,7,13,12,12,6)
+Y<-c(63,67,74,64,75,69,90,60)
+
+a-) Assuming normal error regression model is appropriate, obtain the estimated regression function and plot the residuals $e_i$ against $X_i$. What does your plot residual plot show? (5 points)
+
+```{r}
+x<-c(5,8,11,7,13,12,12,6)
+y<-c(63,67,74,64,75,69,90,60)
+
+reg_4a <- lm(y~x)
+summary(reg_4a)
+ei_4a <- reg_4a$residuals
+plot(x, ei_4a, xlab = 'Age', ylab = 'Residuals')
+
+newer.par = par(mfrow = c(2,2))
+plot(reg_4a)
+newer.par
+```
+Residual plot shows that most of the points are below the baseline.
+
+b-) Omit case 7 from the data and obtain the estimated regression function based on the remaining seven cases. Compare this estimated regression function to that obtained in part (a). What can you conclude about the effect of case 7? (10 points)
+
+```{r}
+x_4b <- x[-c(7)]
+x_4b
+
+y_4b <- y[-c(7)]
+y_4b
+
+reg_4b <- lm(y_4b~x_4b)
+summary(reg_4b)
+
+ei_4b <- reg_4b$residuals
+plot(x_4b, ei_4b, xlab = 'Age', ylab = 'Residuals')
+
+newer.par = par(mfrow = c(2,2))
+plot(reg_4b)
+newer.par
+```
+After omission of case 7 the points now appear to be randomly distributed as seen in the various plots. The F-Stat and R2 values have also improved. Hence, we conclude that the removal of point 7 has improved the regression fit.
+
+c-) Using your fitted regression function in part (b), obtain a 99 percent prediction interval for
+a new Y observation at X = 12. Does observation $Y_{7}$ fall outside this prediction interval?
+What is the significance of this? (10 points)
+
+```{r}
+predict(reg_4b, data.frame(x_4b = 12), interval = 'prediction', level = 0.99, se.fit = TRUE)
+
+
+```
+
+We see from above that for 99% PI the predicted value of Y for X = 12 is 72.52427 with a range of 60.31266 to 84.73588. This means that the given value of y=90 for x=12 is outsize this range.
+
+This means that in the given context the value of Y is an outlier. Reasons for this would need to be investigated in real life before we decide to retain or remove it.

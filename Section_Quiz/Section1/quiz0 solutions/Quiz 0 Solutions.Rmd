@@ -1,0 +1,124 @@
+---
+title: "Quiz 0 Solutions"
+author: R.GomezTagle"
+date: "9/14/2020"
+output: html_document
+---
+
+## Question 1
+
+
+Scores on the SAT Mathematics test are believed to be Normally distributed. The scores of a simple random sample of five students who recently took the exam are 550, 620, 710, 520, and 480. What is a 95% confidence interval for $\mu$, the population mean score on the SAT Math test? at the end of the freshman year (Y) can be predicted from the ACT test score (X). (30 points)
+
+Solution: Answer is C.
+```{r}
+library(knitr)
+x<-c(480, 520, 550, 620, 710)
+mu <- mean(x)
+s <- sqrt(var(x))
+n <- length(x)
+margin.error <- abs(qt((1-0.05/2),n-1))*(s/sqrt(n))  
+left <- format(round(mu-margin.error,2),nsmall=2)
+right <- format(round(mu+margin.error,2),nsmall=2)
+cbind(left,right)
+```
+
+## Question 2
+
+A simple random sample of 100 postal employees is used to test if the average time postal employees have worked for the postal service has changed from the value of 7.5 years recorded 20 years ago. The sample mean was  7 years with a standard deviation of 2 years. Assume the distribution of the time the employees have worked for the postal service is approximately Normal. The hypotheses being tested are H0:$\mu= 7.5$ versus Ha:$\mu ≠ 7.5$. A one-sample t test will be used.  What is the P-value for the one-sample t test?
+
+Solution: see below. 
+```{r}
+xbar<- 7
+s <- 2
+n <- 100
+mu <- 7.5
+tstat <- (xbar-mu)/(s/sqrt(n))
+2*pt(-abs(tstat),n-1)
+
+```
+## Question 3
+A simple random sample of 100 postal employees is used to test if the average time postal employees have worked for the postal service has changed from the value of 7.5 years recorded 20 years ago. The sample mean was 7 years with a standard deviation of s 2 years. Assume the distribution of the time the employees have worked for the postal service is approximately Normal. The hypotheses being tested are H0:$\mu$= 7.5 versus Ha:$\mu$ ≠ 7.5. A one-sample t test will be used. Suppose the mean and standard deviation obtained were based on a sample of size n = 25 postal workers rather than 100. What do we know about the value of the P-value?
+
+
+Solution: p-value is larger, here 0.2233515
+```{r}
+xbar <- 7
+s <- 2
+n <- 25
+mu <- 7.5
+tstat <- (xbar-mu)/(s/sqrt(n))
+2*pt(-abs(tstat),n-1)
+```
+
+## Question 4
+
+Twelve runners are asked to run a 10-kilometer race on each of 2 consecutive weeks. In one of the races, the runners wear one brand of shoe and in the other, a different brand. The brand of shoe they wear in each race is determined at random. All runners are timed and are asked to run their best in each race. The results (in minutes) are given below.
+Use the sign test for matched pairs to determine if there is evidence that times using Brand 1 tend to be faster than times using Brand 2. What is the (approximate) value of the P-value?
+Solution: see below, 
+```{r}
+brand1<-c(31.23,29.33,30.50,32.20,33.08,31.52,30.68,31.05,33.00,29.67,30.55,32.12)
+brand2<-c(32.02,28.98,30.63,32.67,32.95,31.53,30.83,31.10,33.12,29.50,30.57,32.20)
+
+diff<-brand1-brand2
+n<-length(brand1)
+pos=sum(diff>0)
+binom.test(pos,n,0.5,alternative = "less")
+```
+## Question 5
+Let the random variable X be the number of repair calls that an appliance repair shop may receive during an hour. The distribution of X is given below.
+
+What is the expected number of repair calls during an hour?
+Solution: See below
+```{r}
+x<-c(0,1,2,3,4)  # number of calls per hour
+p<-c(0.2,0.3,0.12,0.18,0.2) #probability of observing each number of calls
+#FORMULA: Expected value = SUM pri*x ANSWER is 1.88
+e<-sum(x*p)
+e
+```
+
+## Question 6
+
+A discrete random variable X has a mean of$\mu$ = 15 and a standard deviation of $\sigma$ = 4. The constant value 8 is added to X to create a new variable Y, i.e., Y = X + 8.
+
+What is the expected value of Y?
+
+Solution:
+E(Y)=E(X+8)=E(X)+8=15+8=23\
+
+## Question 7
+
+
+A random variable X has a mean of  $\mu$ = 9 and a standard deviation of $\sigma$ = 2. The random variable X is multiplied by the constant 3 and the constant value of 5 is added to create a new variable Y, i.e., Y = 3X+5.
+
+What is the variance of Y?
+
+Solution:
+V(Y)=V(3X+5)=9*V(X)=9*4=36
+
+
+## Question 8
+
+Inference procedures for comparing the standard deviations of two Normal populations are based on what distribution?
+
+Solution:
+
+F distribution
+
+## Question 9
+
+Suppose X is a continuous random variable taking values between 0 and 1 and having a probability distribution described by the following  density curve. The probability that X takes a value between 0 and 3/4 is:
+
+Solution:
+
+P value is the area of the regions.
+P(0<X<3/4)=P(0<X<0.5)+P(0.5<X<3/4)= 1.5*0.5+0.5*(3/4-0.5)=0.875(or 7/8)
+
+# Question 10 
+
+A researcher measures a response variable Y and explanatory variable X on each of several objects. A scatterplot of the measurements is as follows.  The researcher notices that there is a distinct curved pattern in the plot. It would be appropriate to conclude
+
+Solution:
+
+refers to linear fit so it does not apply for assessing curved or non-linear functions.

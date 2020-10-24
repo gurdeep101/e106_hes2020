@@ -1,0 +1,204 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={CSCI E-106:Assignment 2 Submisison},
+            pdfauthor={Gurdeep Singh},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{CSCI E-106:Assignment 2 Submisison}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Gurdeep Singh}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+    \date{}
+    \predate{}\postdate{}
+  
+
+\begin{document}
+\maketitle
+
+\hypertarget{due-date-september-21-2020-at-720-pm-est}{%
+\subsubsection{Due Date: September 21, 2020 at 7:20 pm
+EST}\label{due-date-september-21-2020-at-720-pm-est}}
+
+\hypertarget{instructions}{%
+\subsubsection{Instructions}\label{instructions}}
+
+Students should submit their reports on Canvas. The report needs to
+clearly state what question is being solved, step-by-step walk-through
+solutions, and final answers clearly indicated. Please solve by hand
+where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2)
+a PDF document, word, or html generated using knitr for the .Rmd file
+submitted in (1) where appropriate. Please, use RStudio Cloud for your
+solutions.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\hypertarget{problem-1}{%
+\subsection{Problem 1}\label{problem-1}}
+
+Refer to the regression model \(Y_{i} = \beta_{0} + \epsilon_{i}\).
+(25pts)
+
+a-) Derive the least squares estimator of \(\beta_{0}\) for this
+model.(10pts)
+
+b-) Prove that the least squares estimator of \(\beta_{0}\) is
+unbiased.(5pts)
+
+c-) Prove that the sum of the Y observations is the same as the sum of
+the fitted values.(5pts)
+
+d-) Prove that the sum of the residuals weighted by the fitted values is
+zero.(5pts)
+
+\hypertarget{problem-2}{%
+\subsection{Problem 2}\label{problem-2}}
+
+Refer to the Grade point average Data. The director of admissions of a
+small college selected 120 students at random from the new freshman
+class in a study to determine whether a student's grade point average
+(GPA) at the end of the freshman year (Y) can be predicted from the ACT
+test score (X). (30 points, each part is 5 points)
+
+a-) Obtain a 99 percent confidence interval for \(\beta_{1}\). Interpret
+your confidence interval. Does it include zero? Why might the director
+of admissions be interested in whether the confidence interval includes
+zero?
+
+b-) Test, using the test statistic \(t^{*}\), whether or not a linear
+association exists between student's ACT score (X) and GPA at the end of
+the freshman year (Y). Use a level of significance of \(\alpha=0.01\).
+State the alternatives, decision rule, and conclusion.
+
+c-) What is the P-value of your test in part (b)? How does it support
+the conclusion reached in part (b)?
+
+d-)Obtain a 95 percent interval estimate of the mean freshman GPA for
+students whose ACT test score is 28. Interpret your confidence interval.
+
+e-) Mary Jones obtained a score of 28 on the entrance test. Predict her
+freshman GPA-using a 95 percent prediction interval. Interpret your
+prediction interval.
+
+f-) Is the prediction interval in part (e) wider than the confidence
+interval in part (d)? Should it be?
+
+g-) Determine the boundary values of the 95 percent confidence band for
+the regression line when \(X_{h}\) = 28. Is your-confidence band wider
+at this point than the confidence interval in part (d)? Should it be?
+
+\hypertarget{problem-3}{%
+\subsection{Problem 3}\label{problem-3}}
+
+Refer to the Crime rate data. A criminologist studying the relationship
+between level of education-and crime rate in medium-sized U.S. counties
+collected the following data for a random sample of 84 counties; X is
+the percentage of individuals in the county having at least a
+high-school diploma, and Y is the crime rate (crimes reported per
+100,000 residents) last year. (45 points, each part is 5 points)
+
+a-)Obtain the estimated regression function. Plot the estimated
+regression function and the data. Does the linear regression function
+appear to give a good fit here? Discuss.
+
+b-) Test whether or not there is a linear association between crime rate
+and percentage of high school graduates, using a t test with
+\(\alpha =0.01\). State the alternatives, decision rule, and conclusion.
+What is the P-value of the test?
+
+c-) Estimate \(\beta_{1}\), with a 99 percent confidence interval.
+Interpret your interval estimate.
+
+d-) Set up the ANOVA table.
+
+e-) Carry out the test in part a by means of the F test. Show the
+numerical equivalence of the two test statistics and decision rules. Is
+the P-value for the F test the same as that for the t test?
+
+f-) By how much is the total variation in crime rate reduced when
+percentage of high school graduates is introduced into the analysis? Is
+this a relatively large or small reduction?
+
+g-) State the full and reduced models.
+
+h-) Obtain (1) SSE(F), (2) SSE(R), (3) dfF. (4) dfR, (5) test statistic
+F* for the general linear test, (6) decision rule.
+
+i-)Are the test statistic F* and the decision rule for the general
+linear test numerically equivalent to those in part a?
+
+
+\end{document}

@@ -13,7 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 rm(list = ls())
 
-setwd("/cloud/project/practice_mid_term") # change to local directory before running
+#setwd("/cloud/project/practice_mid_term") # change to local directory before running
+setwd("~/OneDrive/courses/e106/HW/PM/practice_mid_term")
 
 library(knitr)
 library(onewaytests)
@@ -27,6 +28,11 @@ head(pmq3)
 colnames(pmq3)
 dim(pmq3)
 
+
+sample_reg <- lm(y~x2, data = pmq3)
+summary(sample_reg)
+a <- summary(sample_reg)
+a$r.squared
 ```
 
 Perform one factor analysis by finding the best variable to explain Y. Fit one variable regression model with Y as a dependent variable against remaining variables, as an independent variable one at time. Choice the best variable explain Y and comment on the QQ plot and error vs. fitted values graph for the model assumptions.

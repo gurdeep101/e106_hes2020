@@ -1,0 +1,16 @@
+Variable Name,Description
+Sales price,Sales price of residence (dollars)
+Finished square feet,Finished area of residence (square feet)
+Number of bedrooms,Total number of bedrooms in residence
+Number of bathrooms,Total number of bathrooms in residence
+Air conditioning,Presence or absence of air conditioning: 1 if yes; 0 otherwise
+Garage size,Number of cars that garage will hold
+Pool,Presence or absence of swimming pool: 1 if yes; 0 otherwise
+Year built,Year property was originally constructed
+Quality,Index for quality of construction:
+,1 indicates high quality;
+,2 indicates medium quality;
+,3 indicates low quality
+Style,Qualitative indicator of architectural style
+Lot size,Lot size (square feet)
+Adjacent to highway,Presence or absence of adjacency to highway: 1 if yes; 0 otherwise

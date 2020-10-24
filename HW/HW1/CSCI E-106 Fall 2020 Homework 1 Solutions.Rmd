@@ -1,0 +1,179 @@
+---
+title: "Homework 1 Solutions"
+author: "Hakan Gogtas"
+date: "9/14/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+Problem 1
+
+	Refer to the Grade point average Data. The director of admissions of a small college selected 120 students at random from the new freshman class in a study to determine whether a student's grade point average (GPA) at the end of the freshman year (Y) can be predicted from the ACT test score (X). (30 points)
+
+a-)Obtain the least squares estimates of β0 and β1, and state the estimated regression function. (5pts)
+b-)	Plot the estimated regression function and the data. "Does the estimated regression function appear to fit the data well? (5pts)
+c-)Obtain a point estimate of the mean freshman GPA for students with ACT test score X = 30. (5pts)
+d-)What is the point estimate of the change in the mean response when the entrance test score increases by one point? (5pts)
+e-)Obtain the residuals ε_i. Do they sum to zero? (5pts)
+f-)Estimate $\sigma$^2 and $\sigma$. In what units is σ expressed? (5pts)
+
+### a) 
+### _Solution: GPA = 2.11 + 0.0388*ACT
+```{r}
+library(knitr)
+GPA <- read.csv("/cloud/project/Grade Point Average Data.csv")
+f1a<-lm(Y~X,data=GPA)
+summary(f1a)
+f1a$coefficients
+```
+
+### b) 
+### _Solution: Please see below, more fraction of the data, it will be smoother. 
+```{r}
+plot(GPA$X,GPA$Y,xlab="ACT Score",ylab="GPA")
+abline(f1a)
+```
+### c) 
+### _Solution: it is 3.47 
+```{r}
+Xnew=data.frame(X=35)
+predict(f1a,Xnew)
+```
+### d) 
+### _Solution: 0.0388
+
+### e) 
+### _Solution: yes they do sum to zero
+```{r}
+ei=f1a$residuals
+sum(ei)
+```
+### f) 
+### _Solution: see below, they are expressed as grade points
+```{r}
+sigma2<-sum(ei^2)/(120-2)
+sigma=sqrt(sigma2)
+cbind(sigma2,sigma)
+```
+
+Problem 2
+
+Typographical errors shown below are the number of galleys for a manuscript (X) and the dollar cost of correcting typographical errors (Y) in a random sample of recent orders handled by a firm specializing in technical manuscripts. Assume that the regression model Yi = β1X1 + ε_i  is appropriate, with normally distributed independent error terms whose variance is a σ^2 = 16. (20 pts)
+
+a) Evaluate the likelihood function for $\beta_{1}= 1,2, 3,…,100$. For which of $\beta_{1}$ values is
+the likelihood function largest? (10pts)
+
+b) The maximum likelihood estimator is $\b_{1}=\sum X_{i} Y_{i}/\sum X_{i}^2$.  Find the maximum likelihood estimate. Are your results in part (a) consistent with this estimate? (10 pts)
+
+### a) 
+### _Solution: Ignoring the constant part of the likelihood function for beta=18 gives the maximum likelihood.
+
+```{r}
+y=c(128,213,75,250,446,540)
+x=c(7,12,4,14,25,30)
+beta=seq(1,100)
+
+prg2<-function(x,y,beta){ 
+  n<-length(beta)
+  c<-((2*pi)^(-3))*4^(-6)
+  out<-data.frame(matrix(0,nrow=n,ncol=2))
+  for (i in 1:n){  
+    ypred=beta[i]*x
+    e=y-ypred
+    m1=(e^2)/16
+    Li=exp(-0.5*sum(m1))
+    out[i,1]<-beta[i]
+    out[i,2]<-prod(Li)
+  }    
+  dimnames(out[[2]])[[2]]<c("b1","L")    
+  out
+  }
+round(prg2(x,y,beta),5)
+
+```
+### b) 
+### _Solution: it is 17.9285 with rounding it is 18, similar to the part a. 
+
+
+```{r}
+f2<-lm(y ~ x -1)
+f2$coefficients
+```
+
+Problem 3
+
+Refer to the CDI data set. The number of active physicians in a CDI (Y) is
+expected to be related to total population, number of hospital beds, and total personal income. (30 points)
+
+a)	Regress the number of active physicians in turn on each of the three predictor variables. State the estimated regression functions. (10 points)
+b)	Plot the three estimated regression functions and data on separate graphs. Does a linear regression relation appear to provide a good fit for each of the three predictor variables? (10 points)
+c)	Calculate MSE for each of the three predictor variables. Which predictor variable leads to the smallest variability around the fitted regression line? Which variable would you use the estimate Y and why? (10 points)
+### a) 
+### _Solution: see below
+
+
+```{r}
+CDI <- read.csv("/cloud/project/homework/CDI Data.csv")
+Y=CDI$Number.of.active.physicians
+X1=CDI$Total.population
+X2=CDI$Number.of.hospital.beds
+X3=CDI$Total.personal.income
+f31<-lm(Y~X1)
+f32<-lm(Y~X2)
+f33<-lm(Y~X3)
+rbind(f31$coefficients,f32$coefficients,f33$coefficients)
+```
+
+### b) 
+### _Solution: yes, there is a good fit for each of variables.
+
+
+```{r}
+par(mfrow=c(1,3))
+plot(X1,Y,xlab="Total Population",ylab="The number of active physicians")
+abline(f31)
+plot(X2,Y,xlab="Number of hospital beds",ylab="The number of active physicians")
+abline(f32)
+plot(X3,Y,xlab="total personal income",ylab="The number of active physicians")
+abline(f33)
+```
+### c) 
+### _Solution: Number of Hospital beds gives the smallest MSE. I would use this variable since it has the lowest MSE.
+
+
+```{r}
+n=dim(CDI)[1]
+MSE1=sum(f31$residuals^2)/(n-2)
+MSE2=sum(f32$residuals^2)/(n-2)
+MSE3=sum(f33$residuals^2)/(n-2)
+cbind(MSE1,MSE2,MSE3)
+```
+Problem 4
+Refer to the CDI data set. Use the number of active physicians as Y and total personal income as X. Select 1,000 random samples of 400 observations, fit the regression model and record β0 and β1 for each selected sample. Calculate the mean and variance of β0 and β1 based on the 1,000 different regression line and compare against the regression model in question 3 part a. (20 points)
+
+### _Solution: Mean values: bo= -49.12 and b1=0.1317 
+               Variances: bo=75.9 b1=0.0000013
+from question 3, bo=-48.3948489 and b1= 0.1317012. bo seems off and b1 seems correct, indicating that bo is not a reliable estimate (will change significantly sample to sample.) 
+
+```{r}
+dat<-data.frame(cbind(X3,Y))
+prg3<-function(dat){
+  n=dim(dat)[1]
+  out<-data.frame(matrix(0,nrow=1000,ncol=2))
+  for(i in 1:1000){
+    ind=sample(1:n,400)
+    dat1=dat[ind,]
+    f<-lm(Y~X3,data=dat1)
+    out[i,]<-c(f$coefficients)
+    }
+  dimnames(out)[[2]]<-c("b0","b1")
+  out
+}
+set.seed(123)
+out3=prg3(dat)
+apply(out3,2,mean)
+apply(out3,2,var)
+f33$coefficients
+
+```

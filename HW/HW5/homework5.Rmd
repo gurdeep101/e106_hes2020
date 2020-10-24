@@ -1,0 +1,300 @@
+---
+title: 'CSCI E-106:Assignment 5'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: October 12, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Problem 1
+
+Refer to Plastic hardness data set. X is the elapsed time in hours? and Y is hardness in Brinell
+units. Build a model to predict Y. (30 points, 5 points each)
+
+
+a-) Obtain the residuals ei and prepare a box plot of the residuals. What information is provided by your plot?
+
+```{r}
+rm(list = ls())
+
+library(knitr)
+library(olsrr)
+library(onewaytests)
+library(lmtest)
+
+setwd("~/OneDrive/courses/e106/HW/HW5") # replace with working directory of machine where this is run
+plastic <- read.csv('Plastic Hardness Data-1.csv')
+head(plastic)
+
+# build regression and plot residuals
+reg_p1 <- lm(plastic$Y~plastic$X)
+summary(reg_p1)
+ei_p1 <- reg_p1$residuals
+boxplot(ei_p1, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals')
+#ols_plot_resid_box(reg_p1)
+```
+The boxplot appears to be symmetrical with no outliers and indicates that there are no outliers and that the error terms are normally distributed.
+
+b-) Plot the residuals ei against the fitted values Y; to ascertain whether any departures from
+regression model (2.1) are evident. State your findings.
+
+```{r}
+#ols_plot_resid_fit(reg_p1)
+old.par <- par(mfrow = c(2,2))
+plot(reg_p1)
+old.par
+```
+The residual vs fitted values plot indicates the presence of outliers as well as a pattern in the distribution. This means that regression assumptions are not satisfied. 
+
+c-) Prepare a normal probability plot of the residuals. Also obtain the coefficient of correlation between the ordered residuals and their expected values under normality. Does the normality assumption appear to be reasonable here? 
+
+```{r}
+ols_plot_resid_qq(reg_p1)
+ols_test_correlation(reg_p1)
+```
+The residual values are highly correlated with their expected values under normality as seen from the correlation values. However, this is only within the range of 1-SD while the values diverge beyond this.
+
+The line also does not appear to be at 45 degrees as should be for the condiiton to be satisfied.
+
+d-) Compare the frequencies of the residuals against the expected frequencies under normality,
+using the 25th, 50th, and 75th percentiles of the relevant t distribution. Is the information
+provided by these comparisons consistent with the findings from the normal probability plot
+in part (c)?
+
+As seen from the plot in 1(c) above, the x-axis denotes the theoretical quantiles. 
+
+0 value on x-axis corresponds to 50th percentile and we see that equal number of points are to the left and right of it
+
+-1 value on x-axis corresponds approxmately to 25th percentile while +1 value on x-axis corresponds to 75th percentile.
+
+We see from the plot that 10 points out of total 16, i.e. 62% fall within the range of + or - 1SD. This is close to the expected 68% and may converge with higher values. 
+
+e-) Use the Brown-Forsythe test to determine whether or not the error variance varies with the
+level of X. Divide the data into the two groups, X $\leq$ 24, X > 24, and use $\alpha=0.01$. State the decision rule and conclusion. Does your conclusion support your preliminary findings
+in part (b)?
+
+```{r}
+bf.data <- data.frame(cbind(plastic, reg_p1$residuals, reg_p1$fitted.values))
+
+dimnames(bf.data) # all dim names
+dim(bf.data)
+dimnames(bf.data)[[2]][3:4] <- c('residuals', 'fitted.values')
+
+bf.data1 <- data.frame(cbind(bf.data, ind = as.factor(I(bf.data$X<=median(bf.data$X))*1)))
+dim(bf.data1) # confirm Indicator column added at end
+
+bf.test(residuals~ind, data = bf.data1)
+
+```
+Decision rule for the B-F test is 
+
+H_o : Errors are normally distributed.
+H_a : Errors are not normally distributed.
+
+In above case the p-value is 0.7962498 wich is greater than 0.05 and hence we fail to reject the Null hypothesis and conclude that errors are normally distributed.
+
+f-) conduct the Breusch-Pagan test to determine whether or not the error variance varies with the level of X. Use $\alpha=0.01$. State the alternatives. decision rule, and conclusion. Is your conclusion consistent with your preliminary findings
+in part (b)?
+
+```{r}
+bptest(reg_p1)
+
+```
+
+Decision rule for B-P test is 
+
+H_o : Errors are normally distributed.
+H_a : Errors are not normally distributed.
+
+In above case the p-value is 0.8118 which is greater than 0.01 and hence we fail to reject the Null hypothesis and conclude that errors are normally distributed.
+
+## Problem 2
+Refer to Sales growth Data. (30 points, 10 points each)
+
+a-) Divide the range of the predictor variable (coded years) into five bands of width 2.0, as
+follows: Band 1 ranges from X = -.5 to X = 1.5; band 2 ranges from X = 1.5 to X = 3.5;
+and so on. Determine the median value of X and the median value of Y in each band and
+develop the band smooth by connecting the five pairs of medians by straight lines on a
+scatter plot of the data. Does the band smooth suggest that the regression relation is linear?
+Discuss.
+
+```{r}
+sales <- read.csv('Sales Growth Data.csv')
+head(sales)
+dim(sales)
+plot(sales$X, sales$Y)
+
+sales1 <- subset(sales, X>-0.5 & X<1.5)
+sales2 <- subset(sales, X>1.5 & X<3.5)
+sales3 <- subset(sales, X>3.5 & X<5.5)
+sales4 <- subset(sales, X>5.5 & X<7.5)
+sales5 <- subset(sales, X>7.5 & X<9.5)
+
+s1x <- median(sales1$X)
+s1y <- median(sales1$Y)
+
+s2x <- median(sales2$X)
+s2y <- median(sales2$Y)
+
+s3x <- median(sales3$X)
+s3y <- median(sales3$Y)
+
+s4x <- median(sales4$X)
+s4y <- median(sales4$Y)
+
+s5x <- median(sales5$X)
+s5y <- median(sales5$Y)
+
+med_x <- c(s1x, s2x, s3x, s4x, s5x)
+med_y <- c(s1y, s2y, s3y, s4y, s5y)
+
+plot(med_x, med_y, type = 'b', xlab = 'Median of X', ylab = 'Median of Y', col = 'red')
+```
+The plot suggests that the regression is linear for lower values but turns towards non-linearity for higher values.
+
+b-) Create a series of seven overlapping neighborhoods of width 3.0 beginning at X = -.5. The
+first neighborhood will range from X = -.5 to X = 2.5; the second neighborhood will range
+from X = .5 to X = 3.5; and so on. For each of the seven overlapping neighborhoods, fit a
+linear regression function and obtain the fitted value $\hat{Y_{c}}$ at the center $X_{c}$ of the neighborhood. Develop a simplified version of the lowess smooth by connecting the seven ($X_c$, $\hat{Y_{c}}$) pairs by straight lines on a scatter plot of the data.
+
+```{r}
+sales21 <- subset(sales, X>-0.5 & X<2.5)
+sales22 <- subset(sales, X>0.5 & X<3.5)
+sales23 <- subset(sales, X>1.5 & X<4.5)
+sales24 <- subset(sales, X>2.5 & X<5.5)
+sales25 <- subset(sales, X>3.5 & X<6.5)
+sales26 <- subset(sales, X>4.5 & X<7.5)
+sales27 <- subset(sales, X>5.5 & X<8.5)
+
+x21 <- median(sales21$X)
+x22 <- median(sales22$X)
+x23 <- median(sales23$X)
+x24 <- median(sales24$X)
+x25 <- median(sales25$X)
+x26 <- median(sales26$X)
+x27 <- median(sales27$X)
+
+reg21 <- lm(Y~X, data = sales21)
+reg22 <- lm(Y~X, data = sales22)
+reg23 <- lm(Y~X, data = sales23)
+reg24 <- lm(Y~X, data = sales24)
+reg25 <- lm(Y~X, data = sales25)
+reg26 <- lm(Y~X, data = sales26)
+reg27 <- lm(Y~X, data = sales27)
+
+yh_21 <- predict(reg21, data.frame(X=x21))
+yh_22 <- predict(reg22, data.frame(X=x22))
+yh_23 <- predict(reg23, data.frame(X=x23))
+yh_24 <- predict(reg24, data.frame(X=x24))
+yh_25 <- predict(reg25, data.frame(X=x25))
+yh_26 <- predict(reg26, data.frame(X=x26))
+yh_27 <- predict(reg27, data.frame(X=x27))
+
+x2_med <- c(x21, x22, x23, x24, x25, x26, x27)
+yh_2 <- c(yh_21, yh_22, yh_23, yh_24,yh_25, yh_26,yh_27)
+
+plot(x2_med, yh_2, type = 'b', col = 'red')
+```
+
+c-) Obtain the 95 percent confidence band for the true regression line and plot it on the plot
+prepared in part (b). Does the simplified lowess smooth fall entirely within the confidence
+band for the regression line? What does this tell you about the appropriateness of the linear
+regression function?
+
+```{r}
+reg_yh <- lm(sales$Y~sales$X)
+fit_yh <- predict(reg_yh, data.frame(X = sales$X), interval = 'confidence', level = 0.95)
+
+plot(sales$X, sales$Y, type = 'p', col = 'green', xlab = 'Year', ylab = 'Sales')
+lines(x2_med, yh_2, type = 'b', xlab = 'Median of X', ylab = 'Median of Y', col = 'red')
+lines(x2_med, fit_yh[1:7,2], lty = 'dashed', col = 'blue')
+lines(x2_med, fit_yh[1:7,3], lty = 'dashed', col = 'blue')
+
+```
+The confidence band is outside the regression line. This suggests that the shape of the regression curve is different from that implied by the confidence band and we need further investigation and possibly transformation.
+
+## Problem 3
+
+Refer to Plastic hardness Problem and data.(10 points, 5 points each)
+
+a-) Obtain Bonferroni joint confidence intervals for $\beta_{0}$ and $\beta_{1}$, using a 90 percent family confidence coefficient. Interpret your confidence intervals.
+
+```{r}
+reg_p3 <- lm(Y~X, data = plastic)
+
+# Bonferroni Jt CI
+confint(reg_p3, level = 1-0.1/2) # bonferroni CI for 90% family CI; alpha = -0.90 = 10% LOS
+
+```
+
+The family confidence intervals mean that if we run the test 10,000 times then both values would be in the above range 90% of the time. 
+
+b-) What is the meaning of the family confidence coefficient in part (a)?
+
+The family confidence coefficient is a lower bound on the true family confidence coefficient. It means that both intervals based on the same sample are correct at least 90% of the time.
+
+## Problem 4
+
+Refer to Plastic hardness Problem and data. (25 points)
+
+a-) Management wishes to obtain interval estimates of the mean hardness when the elapsed time
+is 20, 30, and 40 hours, respectively. Calculate the desired confidence intervals1. using the
+Bonferroni procedure and a 90 percent family confidence coefficient. What is the meaning
+of the family confidence coefficient here? (9 points)
+
+```{r}
+# Bonferroni procedure for simultaneous estimation of mean response; 90% family CI
+xh <- c(20, 30, 40)
+pred <- predict.lm(reg_p3, data.frame(X = xh), level = 0.90, se.fit = TRUE) 
+pred 
+
+b <- rep(qt(1-0.90/(2*length(xh)), nrow(plastic)-2), length(xh))
+
+bonf_final <- rbind(pred$fit - b*pred$se.fit, pred$fit + b*pred$se.fit)
+bonf_final 
+
+```
+
+The family confidence coefficient means the proportion of groups of samples that are correct when repeated samples are selected which is 90% in this case as specified. The family confidence coefficient is a lower bound on the true family confidence coefficient. It means that both intervals based on the same sample are correct at least 90% of the time.
+
+b-) Is the Bonferroni procedure employed in part (a) the most efficient one that could be
+employed here? Explain. (8 points)
+
+```{r}
+w <- rep(sqrt(2*qf(0.90, 2, nrow(plastic)-2)), length(xh)) # get f-value and repeat 3 times
+wh_final <- rbind(pred$fit - w*pred$se.fit, pred$fit + w*pred$se.fit) # yhat + & - (W * SE of prediction)
+wh_final
+
+bonf_final[2,1:3] - bonf_final[1,1:3]
+wh_final[2,1:3] - wh_final[1, 1:3]
+```
+The Bonferroni intervals in 2(a) are compared with Working-Hotelling intervals calculated above. As we can see, the Bonferroni intervals are tighter than the W-H intervals and hence we conclude that these are the most efficient
+
+c-) The next two test items will be measured after 30 and 40 hours of elapsed time, respectively. Predict the hardness for each of these two items, using the most efficient procedure and a 90 percent family confidence coefficient. (8 points)
+
+```{r}
+xh <- c(30, 40)
+pred <- predict.lm(reg_p3, data.frame(X = xh), level = 0.90, se.fit = TRUE) 
+pred
+
+b <- rep(qt(1-0.90/(2*length(xh)), nrow(plastic)-2), length(xh))
+
+bonf_final <- rbind(pred$fit - b*pred$se.fit, pred$fit + b*pred$se.fit)
+bonf_final 
+
+```
+
+We have predicted the values and family confidence intervals using the Bonferroni method which was the most efficient method.

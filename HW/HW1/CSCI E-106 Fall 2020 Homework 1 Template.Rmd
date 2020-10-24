@@ -1,0 +1,108 @@
+---
+title: "Homework 1 Solutions"
+author: "XXXXXXXXXXXXXXXX"
+date: "9/14/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+## Problem 1
+
+	Refer to the Grade point average Data. The director of admissions of a small college selected 120 students at random from the new freshman class in a study to determine whether a student's grade point average (GPA) at the end of the freshman year (Y) can be predicted from the ACT test score (X). (30 points)
+
+a-)Obtain the least squares estimates of $\beta_{0}$ and $\beta_{1}$, and state the estimated regression function. (5pts)\
+b-)	Plot the estimated regression function and the data. "Does the estimated regression function appear to fit the data well? (5pts)\
+c-)Obtain a point estimate of the mean freshman GPA for students with ACT test score X = 30. (5pts)\
+d-)What is the point estimate of the change in the mean response when the entrance test score increases by one point? (5pts)\
+e-)Obtain the residuals $\epsilon_{i}$. Do they sum to zero? (5pts)\
+f-)Estimate $\sigma$^2 and $\sigma$. In what units is σ expressed? (5pts)\
+
+# Solutions:
+a-)
+Solution:
+```{r}
+library(knitr)
+
+```
+
+
+b) 
+Solution: 
+```{r}
+
+```
+c) 
+Solution: 
+```{r}
+
+```
+d) 
+Solution: 
+```{r}
+
+```
+e) 
+Solution: 
+```{r}
+
+```
+f) 
+Solution: 
+```{r}
+
+```
+
+## Problem 2
+
+Typographical errors shown below are the number of galleys for a manuscript (X) and the dollar cost of correcting typographical errors (Y) in a random sample of recent orders handled by a firm specializing in technical manuscripts. Assume that the regression model Yi = β1X1 + ε_i  is appropriate, with normally distributed independent error terms whose variance is a σ^2 = 16. (20 pts)
+
+a) Evaluate the likelihood function for $\beta_{1}= 1,2, 3,…,100$. For which of $\beta_{1}$ values is the likelihood function largest? (10pts)\
+
+b) The maximum likelihood estimator is $b_{1}=\sum X_{i} Y_{i}/\sum X_{i}^2$.  Find the maximum likelihood estimate. Are your results in part (a) consistent with this estimate? (10 pts)\
+
+## Solutions:
+a) 
+```{r}
+
+```
+b) 
+
+```{r}
+
+```
+
+## Problem 3
+
+Refer to the CDI data set. The number of active physicians in a CDI (Y) is
+expected to be related to total population, number of hospital beds, and total personal income. (30 points)
+
+a)	Regress the number of active physicians in turn on each of the three predictor variables. State the estimated regression functions. (10 points)\
+b)	Plot the three estimated regression functions and data on separate graphs. Does a linear regression relation appear to provide a good fit for each of the three predictor variables? (10 points)\
+c)	Calculate MSE for each of the three predictor variables. Which predictor variable leads to the smallest variability around the fitted regression line? Which variable would you use the estimate Y and why? (10 points)\
+
+
+## Solutions
+
+a) 
+
+```{r}
+
+```
+b) 
+```{r}
+
+```
+c) 
+```{r}
+
+```
+## Problem 4
+Refer to the CDI data set. Use the number of active physicians as Y and total personal income as X. Select 1,000 random samples of 400 observations, fit the regression model and record $\beta_{0}$ and $\beta_{1}$ for each selected sample. Calculate the mean and variance of $\beta_{0}$ and $\beta_{1}$ based on the 1,000 different regression line and compare against the regression model in question 3 part a. (20 points)
+
+## Solution: 
+
+```{r}
+
+```

@@ -1,0 +1,163 @@
+---
+title: "TACLASS3_continuation"
+author: "RGT"
+date: "9/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 2.24 Same data as copier maintenance
+The Tri-City Office Equipment Corporation sells an imported copier on a franchise basis and performs preventive maintenance and repair service on this copier. The data below have been collected from 45 recent calls on users to perform routine preventive maintenance service; for each call, X is the number of copiers serviced and Y is the total number of minutes spent by the service person. Assume that first-order regression model 
+
+\[Y_i=\beta_o+\beta_iX_i+\varepsilon_i\] is appropriate.
+
+* Read specs see below-rephrase the problem with your own words
+* Master story telling and enjoy the process
+
+We have collected information on 45 service calls, specifically the number of copiers serviced (X) and the duration of the service calls in minutes (Y).
+
+Are these related?
+
+Step 1.-Loading Data
+```{r problem 2.24 load data}
+# Cleaning rm(list=ls()) and Ctrl L at the Console
+rm(list=ls())
+# Assigning the data to a data frame object
+# called df20 and then we want to name the columns
+#df20 = read.delim("/cloud/project/CH01PR20.txt", header=FALSE, sep="")
+df20 = read.delim("CH01PR20.txt", header=FALSE, sep="")
+
+index<-c(1:45)
+df20<-(data.frame(index,df20))
+colnames(df20) = c("i","y","x")
+#knitr::kable(df20[1:8,],"simple")
+```
+
+## Questions
+a. Set up the basic ANOVA table in the format of Table 2.2. Which elements of your table are additive? 
+```{problem 2.24 a }
+lmFit20 = lm(y~x, df20)
+names(lmFit20)
+anova(lmFit20)
+
+# Source1: Variation because of the regression
+y_bar=sum(df20$y)/45
+yd<-(lmFit20$fitted.values-y_bar)^2
+SSR<-sum(yd)
+MSR<-SSR
+
+x_bar=sum(df20$x)/45
+xd<-df20$x-x_bar
+sxd<-xd^2
+ssx<-sum(sxd)
+Sigma2<-MSE
+b1=lmFit20$coefficients[2]
+ExMS=Sigma2+b1^2*ssx
+print(ExMS)
+# Source2: Variation because of the error
+SSE<-sum(lmFit20$residuals^2)
+df_e<-lmFit20$df.residual
+MSE<-SSE/lmFit20$df.residual
+
+# TOTAL model variation is the sum of SSR and SSE
+SSTO=SSR+SSE
+#Modified table includes the correction of the mean
+Cor_f_mean<-45*y_bar^2
+```
+SOLUTION: The degrees of freedom are additive: A) The Total sum of squares (SSTO,  sum(yi-y_bar)^2). We have n - 1 degrees of freedom associated with SSTO. One degree of freedom is lost because the sample mean y_bar is used to estimate the population mean (Y_bar). Call this DF(SSTO). B) The error sum of squares (SSE, sum(yi-yi_hat)^2). SSE has n - 2 degrees of freedom are lost because the two parameters beta0 and beta1 are estimated in obtaining the fitted values yi_hat. Call this DF(SSE). C)The regression sum of squares (SSR is  SSTO – SSE or sum(yi-y_bar)^2 - sum(yi-yi_hat)^2). Here you note that the degrees of freedom are additive: DF(SSR)=DF(SSTO)-DF(SSE) or DF(SSR)=n-1-(n-2)= 1 From the ANOVA for the Copier maintenance problem the degrees of freedom are: DF(SSTO)=44, DF(SSE)=43, DF(SSR)=1
+
+you can input images in your subdirectory and watch them here.
+
+Also set up the ANOVA table in the format of Table 2.3. How do the two tables differ?
+
+Modified table includes the correction of the mean. Sometimes an ANOVA table showing one additional element of decomposition is utilized for building other statistical tests. 
+
+b. Conduct an F test to determine whether or not there is a linear association between time spent and number of copiers serviced; use alpha = .10. State the alternatives, decision rule, and conclusion.
+```{problem 2.24 b }
+anova(lmFit20)
+```
+#From the ANOVAtableabove, F∗ =968.66 and p valueis 0.00000≤alpha=0.10; Reject H0, β1 is signiﬁcant. Yes the p values are the same. 
+
+c. By how much, relatively, is the total variation in number of minutes spent on a call- reduced when the number of copiers serviced is introduced into the analysis? Is this a relatively small or large reduction? What is the name of this measure?
+
+#Total Variation is variation of Y is 80,376.8. It was reduced by SSR, the part that explained by the X, 76960 or 76960/80376.8 or 75%.
+```{problem 2.24c }
+(length(df20$y)-1)*var(df20$y)
+```
+What is the absolute magnitude of the reduction in the variation of Y when X is introduced into the regression model?
+
+SOL. You can use the results above and the model without x. Full model is Yi = β0 +β1Xi Reduced model is Yi = β0. The absolute magnitude is the difference between the variation derived using the full model and the reduced model. 
+
+What is the relative reduction?
+
+#The relative reduction in the variation of Y when X is introduced into the regression model is the R2 value. R2=0.9575
+
+What is the name of the latter measure?
+
+#The R2 value.
+
+d. Calculate r and attach the appropriate sign.
+```{r problem 2.24d}
+r <- sqrt(0.9575)
+r
+```
+#From regression table take the R2 value (multiple R2). Obtain r and attach the appropriate sign. The r value is the same as the correlation when the regression only includes one explanatory variables. The sign is positive because there is a positive correlation between the two sets of data, indicated by the positive slope of the linear model.
+
+e. Which measure, r or R2, has the more clear-cut operational interpretation?
+
+#R2 is a more clear-cut operational interpretation. R2 only takes values between 0 and 1. And R2 describes the percent of the variance of variable y that is explained by variable x. more frequently used to describe the relationship between the two variables.
+
+
+
+## 2.27 same data as the Muscle mass Problem 1.27.
+Muscle mass. A person's muscle mass is expected to decrease with age. To explore this relationship in women, a nutritionist randomly selected 15 women from each 10-year age group, beginning with age 40 and ending with age 79. The results follow; X is age, and Y is a measure of muscle mass. Assume that first-order regression model
+\[Y_i=\beta_o+\beta_iX_i+\varepsilon_i\] is appropriate.
+
+*Read specs see below-rephrase the problem with your own words
+*Master story telling and enjoy the process
+
+We have collected information on the muscle mass of women between the ages of 40 and 79, specifically their age (X) and their corresponding muscle mass (Y).
+The objective is to confirm that they have a negative relationship.
+
+```{r problem 2.27 load data}
+
+df27 = read.delim("CH01PR27.txt", header=FALSE, sep="")
+colnames(df27) = c("y", "x")
+
+```
+
+a. Conduct a test to decide whether or not there is a negative linear association between amount of muscle mass and age.
+Control the risk of Type I error at .05.
+State the alternatives, decision rule, and conclusion.
+What is the P-value of the test?
+```{r problem 2.27a }
+
+lmFit27 = lm(y~x, df27)
+print(summary(lmFit27))
+qt(1-0.05,58)
+
+1-pt(13.19,58)
+```
+#H0 : β1 >=0    Ha : β1 <0 (Note, this is a one-sided test.) From the summary table and calculations above, t∗=-13.19 and p value is 0.000000 < α =0.05. Clearly reject the null hypothesis H0. Conclusion: there is sufficient evidence that there is a negative linear association between amount of muscle mass and age.
+
+b. The two-sided P-value for the test whether beta0 = 0 is 0+.
+Can it now be concluded that beta0 provides relevant information on the amount of muscle mass at birth for a female child?
+
+#No. Even though the test of non-zero beta0 is significant, beta0 does not provide relevant information on the amount of muscle mass at birth for a female child, because data are not collected in that region; also it does not make sense to directly compare muscle mass of an adult and a newborn child.
+
+c. Estimate with a 95 percent confidence interval the difference in expected muscle mass for women whose ages differ by one year.
+```{r problem 2.24c}
+
+confint(lmFit27,level=0.95)
+
+```
+#The difference in expected muscle mass for women whose ages differ by one year is the slope of the regression line: beta1, so we need a 95% two sided confidence interval for beta1, which is provided by R as 95% conﬁdence interval is -1.370545 ≤ β1 ≤-1.009446. It did not include zero, indicating that β1 is signiﬁcant. 
+
+Why is it not necessary to know the specific ages to make this estimate?
+
+#It is not necessary to know the specific ages to make this estimate because the confidence interval depends on the estimated slope of the regression equation, its standard error, and a t multiplier. These don't change as X changes. We assume that the slope stays the same over the range of X values of interest.
+
+#Useful R functions: dt() gives the density, pt() gives the distribution function, qt() qt gives the quantile function of the "t" distribution and qf() same but for the F.

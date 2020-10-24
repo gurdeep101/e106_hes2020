@@ -1,0 +1,235 @@
+---
+title: "TACLASS3"
+author: "RGT"
+date: "9/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+# Excercise 2.5:
+1. Copier maintenance (5 minutes)
+The Tri-City Office Equipment Corporation sells an imported copier on a franchise basis and performs preventive maintenance and repair service on this copier. The data below have been collected from 45 recent calls on users to perform routine preventive maintenance service; for each call, X is the number of copiers serviced and Y is the total number of minutes spent by the service person. Assume that first-order regression model 
+
+\[Y_i=\beta_o+\beta_iX_i+\varepsilon_i\] is appropriate.
+
+*Read specs see below-rephrase the problem with your own words
+*Master story telling and enjoy the process
+
+We have collected information on 45 service calls, specifically the number of copiers serviced (X) and the duration of the service calls in minutes (Y).
+
+Are these related?
+
+Step 1.-Loading Data
+```{r problem 1.20  data}
+# Assigning the data to a data frame object
+# called df20 and then we want to name the columns
+# df20 = read.delim("/cloud/project/CH01PR20.txt", header=FALSE, sep="")
+
+df20 = read.delim("~/OneDrive/courses/e106/Section_Quiz/Section3/CH01PR20.txt", header=FALSE, sep="")
+
+index<-c(1:45)
+df20<-(data.frame(index,df20))
+colnames(df20) = c("i","y","x")
+# knitr::kable(df20[1:8,],"simple")
+```
+
+
+##  Questions
+a) Estimate the change in the mean service time when the number of copiers serviced increases by one. 
+
+```{r problem 2.5a}
+lmFit20 = lm(y~x, df20)
+yHat1 = predict(lmFit20, data.frame(x=5))
+print(yHat1)
+yHat2 = predict(lmFit20, data.frame(x=4))
+print(yHat2)
+print(-yHat2 + yHat1)
+#check is the slope
+lmFit20$coefficients[2]
+```
+#when the number of machines increased by one the increase in the service time is 15.03525 minutes.
+
+Use a 90 percent confidence interval.
+```{r problem 2.5abis}
+confint(lmFit20,level=0.90)
+```
+Interpret your confidence interval. 
+#This is a 90% confidence interval for β1: (14.22314, 15.847352), which means if repeating this procedure on multiple samples, 90% of the time, the true parameter would fall inside of this interval. Regarding the constant, note the 90% percent confidence interval for β0 includes zero.
+
+b) Conduct a t test to determine whether or not there is a linear association between X and Y here; control the alpha risk at .10. State the alternatives, decision rule, and conclusion. What is the P-value of your test? 
+```{r problem 2.5b}
+print(summary(lmFit20))
+qt(1-0.10/2,43)
+pt(31.123,43)
+2*(1-pt(31.123,43))
+
+```
+#The hypotheses are: H_0: β1 = 0 vs. Ha: β1 ≠0. to show that there is linear relationship.(Note, this is a two-sided test.) The test statistic and p-value can be read directly from the R output, as t* = 31.123. The decision rule: reject H_0 if t > 1.68107, or equivalently, reject H0 if the p-value< 0.1. Here is zero.The conclusion: there is convincing evidence to reject the NULL hypothesis that there is no linear association between the number of copiers at allocation of a call and the time spent by the serviceman for the call.
+
+c) Are your results in parts (a) and (b) consistent? Explain. 
+#Yes they are consistent. (a) established that zero is not a value included in the interval for estimated β1 at 90% confidence interval. And can not reject the null hypothesis that β0 is equal to zero because t is small and p value is large.
+
+d) The manufacturer has suggested that the mean required time should not increase by more than 14 minutes for each additional copier that is serviced on a service call. Conduct a test to decide whether this standard is being satisfied by Tri-City. Control the risk of a Type I error at .05. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+#H0 : β1 ≤ 14 Ha : β1 > 14 the test statistic t = (b1−14)/s(b1 ) = (15.03525−14)/0.4831 = 2.1428 The decision rule: reject H0 if t > 1.681, or equivalently, reject H0 if p < 0.05. The p-value of the test is P(t43 > 2.1428) = 0.0189. There is sufficient statistical evidence to reject the NULL hypothesis that the standard is being satisfied by Tri-City.
+```{r problem 2.5d}
+print(summary(lmFit20))
+test=(15.03525 - 14)/0.4831
+print(test)
+##
+qt(1-0.05,43)
+##
+pt(2.142931,43)
+1-pt(2.142931,43)
+```
+e) Does β0 give any relevant information here about the "start-up" time on calls-i.e., about the time required before service work is begun on the copiers at a customer location? 
+#The intercept does not give relevant information on the start-up time for calls. The estimated coefficient β0 is negative which does not provide meaningful information about the start-up time. A formal t test on the hypothesis that β0 = 0 shows no evidence(pvalue=0.84) to reject the hypothesis, that is, there is no enough evidence to indicate that the true parameterβ0 is significantly different from zero.
+
+# Excercise 2.6:
+2. Airfreight breakage. 
+A substance used in biological and medical research is shipped by air-freight to users in cartons of 1,000 ampules. The data below, involving 10 shipments, were collected on the number of times the carton was transferred from one aircraft to another over the shipment route (X) and the number of ampules found to be broken upon arrival (Y). Assume that ﬁrst-order regression model \[Y_i=\beta_o+\beta_iX_i+\varepsilon_i\] is appropriate.
+
+
+```{r load d}
+#df21 = read.delim("/cloud/project/CH01PR21.txt", header=FALSE, sep="")
+df21 = read.delim("~/OneDrive/courses/e106/Section_Quiz/Section3/CH01PR21.txt", header=FALSE, sep="")
+df21_1 = read.table("CH01PR21.txt")
+colnames(df21) = c("y", "x")
+lmFit21 = lm(y~x, df21)
+plot(df21$x, df21$y, xlab="Shipment", ylab="Ampules")
+abline(lmFit21)
+summary(lmFit21)
+```
+a) Estimate beta1 with a 95 percent confidence interval. Interpret your interval estimate.
+```{r load data}
+confint(lmFit21,level=0.95)
+```
+#The 95% confidence interval for b1: (2.918388, 5.081612), which means if repeating this procedure on multiple samples, 95% of the time, the true parameter β1 would fall inside of this interval
+b) Conduct a "t" test to decide whether or not there is a linear association between the number of times a carton is transferred (X) and number of broken ampules (Y). Use a level of significance of .05. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+```{r problem 2.6b}
+print(summary(lmFit21))
+qt(1-0.05/2,8)
+pt(8.528,8)
+2*(1-pt(8.528,8))
+```
+#The hypotheses are: H_0: β1 = 0 vs. Ha: β1 ≠0. to show that there is linear relationship.(Note, this is a two-sided test.) The test statistic and p-value can be read directly from the R output, as t* = 8.528 The decision rule: reject H_0 if t > 2.306004, or equivalently, reject H0 if the p-value< 0.05 Here is zero.The conclusion: there is convincing evidence to reject the NULL hypothesis that there is no linear association between the number of broken ampules and the number of times the boxes are shipped.
+
+#Another way:Set up the ANOVA table. Check the F statistic.
+```{r problem 2.6bbis}
+anova(lmFit21) 
+```
+#The F null hypothesis is that H0: β0=0 β1=0? Here F*>F.test.df21
+
+c) β0 represents here the mean number of ampules broken when no transfers of the shipment are made- i.e., when x = O. Obtain a 95 percent confidence interval for β0 and interpret it.
+```{r problem 2.6c}
+predict(lmFit21,data.frame(x=0),interval="confidence",level=0.95,se.fit=TRUE)
+```
+#The 95% confidence interval for β0: (8.67037, 11.72963), which means if there is no shipments, 95% of the time, the true parameter β0(# of broken ampules when in storage) would fall inside of this interval.
+
+d) A consultant has suggested, on the basis of previous experience, that the mean number of broken ampules should not exceed 9.0 when no transfers are made. Conduct an appropriate test, using alpha = .025. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+
+```{r problem 2.6d}
+print(summary(lmFit21))
+test=(10.2 - 9)/0.6633
+print(test)
+qt(1-0.025,8)
+pt(1.809136,8)
+1-pt(1.809136,8)
+```
+#H0 : β1 ≤ 9 Ha : β1 > 9 the test statistic t = (b1−9)/s(b1 ) = (10.2 - 9)/0.6633 = 1.809136 The decision rule: reject H0 if t > 2.306004, or equivalently, reject H0 if p < 0.025. The p-value of the test is P(t8 > 1.809136) = 0.05401665. There is no enough statistical evidence to reject the NULL hypothesis suggested by the consultant.
+
+e) Obtain the power of your test in part (b) if actually beta1 = 2.0. Assume sigma(beta1} = .50. Also obtain the power of your test in part (d) if actually beta0 = 11. Assume sigma{beta0} = .75. 
+The probability that a test will reject the null is called the power of the test (not in HW2 so next time.)
+#Load pwr package
+
+```{r problem 2.6e}
+library(pwr)
+```
+The power of a test is the probability that we can the reject null hypothesis at a given mean that is away from the one specified in the null hypothesis. We calculate this probability by first calculating the probability that we accept the null hypothesis when we should not. This is the probability to make a type II error. The power is the probability that we do not make a type II error so we then take one minus the result to get the power.
+
+## 2.14 Refer to Copier maintenance Problem 1.20.
+a) Obtain a 90 percent confidence interval for the mean service time on calls in which six copiers are serviced. Interpret your confidence interval.
+
+```{r problem 2.14a}
+predict(lmFit20,data.frame(x=6),interval="confidence",level=0.90)
+```
+#The estimated service time frame for six copiers is 89.6 minutes. 90% confidence interval for the service time is 87.28≤ service time ≤91.98.
+
+b) Obtain a 90 percent prediction interval for the service time on the next call in which six copiers are serviced. Is your prediction interval wider than the corresponding confidence interval in part (a)? Should it be?
+
+```{r problem 2.14b}
+predict(lmFit20,data.frame(x=6),interval="prediction",level=0.90,se.fit=FALSE)
+```
+
+#The predicted service time frame for six copiers is 89.6 minutes. 90% prediction interval for the service time is broader 74.46≤ service time ≤104.798.Because the prediction variance is larger.
+
+c) Management wishes to estimate the expected service time per copier on calls in which six copiers are serviced. Obtain an appropriate 90 percent confidence interval by converting the interval obtained in part (a). Interpret the converted confidence interval.
+
+```{r problem 2.14c}
+Y_M=89.63133/6
+L_M=87.28387/6
+U_M=91.9788/6
+```
+
+#The mean service time per copier is 14.93, the interval 14.55<Y_M<15.32  
+
+d) Determine the boundary values of the 90 percent confidence band for the regression line when Xh = 6. Is your confidence band wider at this point than the confidence interval in part (a)? Should it be
+
+```{r problem 2.14d}
+predict(lmFit20,data.frame(x=6),interval="prediction",level=0.90,se.fit=TRUE)
+W2= 2*qf(1-0.10,2,43)
+W=sqrt(W2)
+W
+cbind(89.63133-2.204725*1.396411,89.63133+2.204725*1.396411) 
+```
+#We build the appropriate F test statistics for the expected value and the interval is wider because the prediction uncertainty added. W^2 = 2F(1-α;2,n−2) = 2F(0.90;2,43) = 2(2.430407);W=2.204725;89.63133-2.204725*1.396411 ≤ β0 +β1Xh ≤89.63133+2.204725*1.396411 OR 86.55263≤ β0 +β1Xh ≤92.71003 
+
+## 2.15  Refer to Airfreight breakage Problem 1.21.
+
+a) Because of changes in airline routes, shipments may have to be transferred more frequently than in the past. Estimate the mean breakage for the following numbers of transfers: X = 2, 4. Use separate 99 percent confidence intervals. Interpret your results.
+```{r problem 2.15a}
+predict(lmFit21,data.frame(x=2),interval="confidence",level=0.99)
+
+predict(lmFit21,data.frame(x=4),interval="confidence",level=0.99)
+```
+#fit      lwr      upr
+# 18.2 15.97429 20.42571
+# 26.2 21.22316 31.17684
+# The more shipments the more broken ampules @ 99% confidence
+
+b) The next shipment will entail two transfers. Obtain a 99 percent prediction interval for the number of broken ampules for this shipment. Interpret your prediction interval.
+```{r problem 2.15b}
+predict(lmFit21,data.frame(x=2),interval="prediction",level=0.99)
+
+```
+#Here the predicted value is fit=18.2 and the interval is (12.75,23.65). As expected the prediction interval is broader because of the variance.
+
+c) In the next several days, three independent shipments will be made, each entailing two transfers. Obtain a 99 percent prediction interval for the mean number of ampules broken in the three shipments. Convert this interval into a 99 percent prediction interval for the total number of ampules broken in the three shipments.
+
+```{r problem 2.15c}
+predict(lmFit21,data.frame(x=3),interval="prediction",level=0.99,se.fit=FALSE)
+Y_M=22.2/3
+L_M=16.10464/3
+U_M=28.29536/3
+```
+#The prediction interval for the mean of broken ampules per shipment is 5.4<7.4<9.4 @ 99% The total for 3 shipments prediction interval 16.04<22.2<28.29.
+
+d) Determine the boundary values of the 99 percent confidence band for the regression line when Xh = 2 and when Xh = 4. Is your confidence band wider at these two points than the corresponding confidence intervals in part (a)? Should it be? 
+```{r problem 2.15d}
+predict(lmFit21,data.frame(x=3),interval="prediction",level=0.99,se.fit=TRUE)
+W2= 2*qf(1-0.01,2,8)
+W=sqrt(W2)
+W
+
+cbind(22.2-4.159113*1.048809,22.2+4.159113*1.048809)
+```
+#Interval with x=3 is [17.83788, 26.56212] is wider.
+```{r problem 2.15db}
+predict(lmFit21,data.frame(x=4),interval="prediction",level=0.99,se.fit=TRUE)
+W2= 2*qf(1-0.01,2,8)
+W=sqrt(W2)
+cbind(26.2-4.159113*1.48324,26.2+4.159113*1.48324)
+```
+#Interval with x=4 is [20.03104, 32.36896] is wider.
