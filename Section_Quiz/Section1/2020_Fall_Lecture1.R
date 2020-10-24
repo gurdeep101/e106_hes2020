@@ -34,8 +34,10 @@ toluca.reg <- lm(workhrs ~ lotsize)
 # getting the summary regression output:
 toluca.reg <- lm(workhrs ~ lotsize)
 summary(toluca.reg)
+
 # getting the confidence interval
 confint(toluca.reg, level = 0.95) # significant since zero is not in the interval
+
 # predict values
 predict(toluca.reg,data.frame(lotsize = 10), se.fit = TRUE, interval = 'confidence')
 predict(toluca.reg,data.frame(lotsize = c(10,20)), se.fit = TRUE, interval = 'confidence')

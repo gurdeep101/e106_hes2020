@@ -2,7 +2,7 @@ rm(list = ls())
 library(onewaytests)
 library(lmtest)
 
-setwd("~/OneDrive/courses/e106/Section_Quiz/Section1")
+setwd("~/OneDrive/courses/e106/e106_hes2020/lecture_r_codes")
 
 toluca <- read.csv('toluca_data.csv')
 colnames(toluca) <- c('size', 'hrs')
@@ -11,6 +11,30 @@ head(toluca)
 fitreg <- lm(hrs~size, data = toluca)
 summary(fitreg)
 res <- fitreg$residuals
+
+# getting confidence interval
+confint(fitreg, level = 0.95)
+
+# predict values 
+predict(fitreg, data.frame(size = 10), se.fit = TRUE, interval = 'confidence')
+predict(fitreg, data.frame(size = c(10,20), se.fit = TRUE, interval = 'confidence'), level = 0.90)
+
+# get prediction interval; will be wider than confidence interval
+predict(fitreg, data.frame(size = c(10,20)), se.fit = TRUE, interval = 'prediction', level = 0.90)
+
+# anova
+anova(fitreg)
+
+# fitted values
+fitted(fitreg)
+fitreg$fitted.values
+
+names(fitreg)
+
+# extract R2; ?sumary.lm for more info
+summary(fitreg)$r.squared
+summary(fitreg)$adj.r.squared
+
 
 new.par <- par(mfrow = c(2,2))
 plot(toluca$size, res, col = 'red', xlab = 'lot size', ylab = 'residual', main = 'Residual plot against X')
@@ -62,6 +86,32 @@ b <- rep(qt(1-0.90/(2*length(xh)), nrow(toluca)-2), length(xh))
 
 bonf_final <- rbind(pred$fit - b*pred$se.fit, pred$fit + b*pred$se.fit)
 bonf_final 
+
+# simultaneous prediction intervals for new observations 
+xh <- c(80,100)
+g <- length(xh)
+alpha <- 0.05
+
+ci.new <- predict.lm(fitreg, data.frame(size = c(xh)), se.fit = TRUE, level = 1-alpha)
+ci.new
+m <- rbind(rep(qt(1-alpha/(2*g), fitreg$df.residual),g), rep(sqrt(g*qf(1-alpha, g, fitreg$df.residual)),g) ) 
+# repeat t-value g times; repeat f-value g times
+m
+
+spred <- sqrt(ci.new$residual.scale^2 + (ci.new$se.fit)^2)
+spred
+
+# put all values in a transpose matrix
+pred.new <- t(rbind(
+  'Yh' = xh,
+  'spred' = spred,
+  'fit' = ci.new$fit,
+  'lower.B' = ci.new$fit - m[1,] * spred,
+  'upper.B' = ci.new$fit + m[1,] * spred,
+  'lower.s' = ci.new$fit - m[2,] * spred,
+  'upper.s' = ci.new$fit + m[2,] * spred))
+
+pred.new
 
 # plot confidence band of regressions
 fit_yh <- predict(fitreg, data.frame(size = toluca$size), interval = 'confidence', level = 0.90)
