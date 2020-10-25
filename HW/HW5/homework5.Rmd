@@ -35,7 +35,8 @@ library(olsrr)
 library(onewaytests)
 library(lmtest)
 
-setwd("~/OneDrive/courses/e106/HW/HW5") # replace with working directory of machine where this is run
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW5")
+ # replace with working directory of machine where this is run
 plastic <- read.csv('Plastic Hardness Data-1.csv')
 head(plastic)
 

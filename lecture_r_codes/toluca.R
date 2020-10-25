@@ -23,7 +23,6 @@ predict(fitreg, data.frame(size = c(10,20), se.fit = TRUE, interval = 'confidenc
 predict(fitreg, data.frame(size = 100), se.fit = TRUE, interval = 'prediction', level = 0.90)
 predict(fitreg, data.frame(size = c(10,20)), se.fit = TRUE, interval = 'prediction', level = 0.90)
 
-
 # anova
 anova(fitreg)
 
@@ -57,14 +56,27 @@ dimnames(bf.data)[[2]] # column names
 dimnames(bf.data)[[2]][3] # 3rd column
 dimnames(bf.data)[[2]][3:4] # 3rd and 4th column
 dim(bf.data)
+
+
 dimnames(bf.data)[[2]][3:4] <- c('residuals', 'fitted.values')
 
 bf.data1 <- data.frame(cbind(bf.data, ind = as.factor(I(bf.data$size<=median(bf.data$size))*1)))
-dim(bf.data1) # Indicator column added at end
+dim(bf.data1) # Indicator column added at end on basis of medium
 
 bf.test(residuals~ind, data = bf.data1)
+# DEcision Rule
+# Ho : Difference is not statistically significant; i.e. error variance is constant
+# Ha : Difference is statistically significant; 
+
+# Decision Rule 
+# p-value > 0.05 ==> Accept Ho
 
 # BP Test
+bptest(fitreg)
+# Ho : Errors are normally distributed; no heteroskedasticicty
+# Ha : Errors are not normally distributed
+
+# Decision Rule: p-value > 0.05 ==> Accept Ho
 
 # Bonferroni Jt CI
 confint(fitreg) # standard CI
@@ -73,6 +85,13 @@ confint(fitreg, level = 0.95) # standard CI
 confint(fitreg, level = 1-0.1/2) # bonferroni CI for 90% family CI; alpha = -0.90 = 10% LOS
 
 # Working-Hotelling Procedure for simultaneous estimation of mean response; 90% family CI
+xh<-data.frame(size=c(30,65,100))
+
+W <- sqrt( 2 * qf(0.90,2,23))
+CI<-predict(fitreg, xh, se.fit=TRUE, interval="confidence", level=0.90)
+cbind(CI$fit[,1]-W*CI$se.fit, CI$fit[,1] + W*CI$se.fit )
+
+
 xh <- c(30, 65, 100)
 pred <- predict.lm(fitreg, data.frame(size = c(xh)), level = 0.90, se.fit = TRUE ) # can use interval = ' ' , se.fit = TRUE
 pred
@@ -81,11 +100,12 @@ wh_final <- rbind(pred$fit - w*pred$se.fit, pred$fit + w*pred$se.fit) # yhat + &
 wh_final
 
 # Bonferroni procedure for simultaneous estimation of mean response; 90% family CI
-xh <- c(30, 65, 100)
+xh <- c(30, 65,28 ,55,33,47,100)
+
+predict.lm(fitreg, data.frame(size = c(xh)), interval = 'confidence', level = 1-0.1/length(xh))
+
 pred <- predict.lm(fitreg, data.frame(size = c(xh)), level = 0.90, se.fit = TRUE) # can use interval = ' ', se.fit = TRUE
-
 b <- rep(qt(1-0.90/(2*length(xh)), nrow(toluca)-2), length(xh))
-
 bonf_final <- rbind(pred$fit - b*pred$se.fit, pred$fit + b*pred$se.fit)
 bonf_final 
 
