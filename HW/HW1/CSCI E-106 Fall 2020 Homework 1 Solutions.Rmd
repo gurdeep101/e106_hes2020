@@ -3,8 +3,8 @@ title: "Homework 1 Solutions"
 author: "Hakan Gogtas"
 date: "9/14/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 Problem 1
@@ -22,7 +22,11 @@ f-)Estimate $\sigma$^2 and $\sigma$. In what units is σ expressed? (5pts)
 ### _Solution: GPA = 2.11 + 0.0388*ACT
 ```{r}
 library(knitr)
-GPA <- read.csv("/cloud/project/Grade Point Average Data.csv")
+#GPA <- read.csv("/cloud/project/Grade Point Average Data.csv")
+
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW1")
+GPA <- read.csv("Grade Point Average Data.csv")
+
 f1a<-lm(Y~X,data=GPA)
 summary(f1a)
 f1a$coefficients
@@ -114,7 +118,7 @@ c)	Calculate MSE for each of the three predictor variables. Which predictor vari
 
 
 ```{r}
-CDI <- read.csv("/cloud/project/homework/CDI Data.csv")
+CDI <- read.csv("CDI Data.csv")
 Y=CDI$Number.of.active.physicians
 X1=CDI$Total.population
 X2=CDI$Number.of.hospital.beds
