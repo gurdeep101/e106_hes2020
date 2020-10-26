@@ -17,7 +17,7 @@ confint(fitreg, level = 0.95)
 
 # predict values 
 predict(fitreg, data.frame(size = 100), se.fit = TRUE, interval = 'confidence', level = 0.9)
-predict(fitreg, data.frame(size = c(10,20), se.fit = TRUE, interval = 'confidence'), level = 0.90)
+predict(fitreg, data.frame(size = c(10,20), se.fit = TRUE, interval = 'confidence', level = 0.90)
 
 # get prediction interval; will be wider than confidence interval
 predict(fitreg, data.frame(size = 100), se.fit = TRUE, interval = 'prediction', level = 0.90)
