@@ -27,10 +27,10 @@ library(lmtest)
 library(MASS)
 library(ALSM)
 
-pmq1 <- read.csv('PM Q1.csv')
-head(pmq1)
-colnames(pmq1)
-dim(pmq1)
+mtq1 <- read.csv('Midterm Q1 Data Set.csv')
+head(mtq1)
+colnames(mtq1)
+dim(mtq1)
 
 ```
 

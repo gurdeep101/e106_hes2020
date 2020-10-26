@@ -11,10 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
-rm(list = ls())
+#rm(list = ls())
 
-#setwd("/cloud/project/practice_mid_term") # change to local directory before running
-setwd("~/OneDrive/courses/e106/HW/PM/practice_mid_term")
+setwd("/cloud/project/HW/PM/practice_mid_term") # change to local directory before running
+#setwd("~/OneDrive/courses/e106/HW/PM/practice_mid_term")
 
 library(knitr)
 library(onewaytests)

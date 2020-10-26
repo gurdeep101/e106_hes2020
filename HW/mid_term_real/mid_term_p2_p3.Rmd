@@ -1,0 +1,198 @@
+---
+title: "p2_and_p3_mid_term"
+author: "Gurdeep"
+date: "25/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+
+setwd("/cloud/project/HW//mid_term_real") # change to local directory before running
+
+library(knitr)
+library(onewaytests)
+library(olsrr)
+library(lmtest)
+library(MASS)
+library(ALSM)
+
+```
+
+P2 
+
+Read in dataset for problem 2
+
+```{r}
+# read in the data set
+p2 <- read.csv('Midterm Q2 Data Set.csv')
+head(p2)
+colnames(p2)
+dim(p2)
+
+
+```
+Perform one factor analysis by finding the best variable to explain Y. Fit one variable regression model with Y as a dependent variable against remaining variables, as an independent variable one at a time.
+
+After reading in the dataset we perform 1 factor analysis below
+
+```{r}
+reg_p2_r2 <- vector(mode = 'integer', length = (ncol(p2)-1))
+
+for (i in 2:(ncol(p2))) {
+  print(paste("Regression with x",i-1))
+  #print(p2[1,i])
+  reg <- lm(Y~p2[,i], data = p2)
+  print(summary(reg))
+  reg_p2_r2[i-1] <- summary(reg)$r.squared
+}
+```
+
+Choose the variable with highest R2 that explains Y 
+
+```{r}
+# print out all R2 values and index of max R2
+reg_p2_r2
+which.max(reg_p2_r2)
+```
+From the above we see that x1 has the highest R2 that explains Y. Hence we perfrom regression and comment on plots below.
+
+Comment on the QQ plot and error vs. fitted values graph for the model assumptions.
+
+```{r}
+# perform regression
+reg_p2 <- lm(p2$Y~p2$X1)
+summary(reg_p2)
+ei_reg_p2 <- reg_p2$residuals
+
+# plot residuals and other standard plots
+old.par <- par(mfrow = c(2,2))
+plot(reg_p2)
+old.par
+
+newer.par = par(mfrow = c(2,2))
+plot(p2$X1, p2$Y, xlab = 'X1', ylab = 'Y', main = 'Scatter plot of given variables')
+plot(p2$X1,ei_reg_p2, xlab = 'X1', ylab = 'Residuals', main = 'Residuals vs X1')
+boxplot(ei_reg_p2, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals', main = 'Boxplot of residuals')
+hist(ei_reg_p2, main = 'Histogram of Residuals')
+newer.par
+```
+From the Regression plots we see that 
+
+Residuals vs fitted values plot:
+
+1. Shows a downward and an upward trend 
+2. There are outliers present
+
+Q-Q plot
+
+1. The line is not 45 degrees
+2. values start diverging after 1SD on positive and negative sides
+
+Scatterplot of x & y
+
+1. Shows a non-linear relationship; low angle trend which turns upwards
+
+Residuals vs X plot
+
+1. Shows a curved relationship; downward trend and an upward trend; not random
+
+Boxplot
+
+1. Asymmetrical with few outliers
+
+Histogram of residuals
+1. Is not normally distributed.
+
+This shows us that the following regression assumptions are not satisfied
+
+1. Linearity of the regression function
+2. Error terms have constant variance
+3. Error terms are normally distributed
+4. Error terms are independent
+5. Model fits all but 1 or few outliers
+
+P3
+
+Based on your final model selected on problem 2 (20 points).
+
+a-) is the linear fit appropriate? If not, transform the data and find an appropriate fit. Comment on the model and regression model assumptions. (10 points)
+
+From p2 above we see that a linear fit is not appropriate. The values are spaced into 2 groups and the regression assumptions are also not satisfied. 
+
+We use boxcox transform to determine appropriate transform of y since linear regression assumptions are not satisfied.
+
+```{r}
+# use the boxcox transformation
+boxcox(reg_p2, lambda = seq(-1.0, 1.0,0.1))
+```
+
+From the boxcox transformation above we see that the recommended lambda value is closest to 0.5. It is easier to explain lambda = 0.5 which implies a square root transform of the y variable. Below we perform the same and redo regression and plots.
+
+```{r}
+# perform regression
+y <- p2$Y
+x <- p2$X1
+reg_p3a <- lm(sqrt(y)~x)
+summary(reg_p3a)
+ei_reg_p3a <- reg_p3a$residuals
+
+# plot residuals and other standard plots
+old.par <- par(mfrow = c(2,2))
+plot(reg_p3a)
+old.par
+
+newer.par = par(mfrow = c(2,2))
+plot(x, sqrt(y), xlab = 'X1', ylab = 'sqrt of Y', main = 'Scatter plot of given variables')
+plot(x,ei_reg_p3a, xlab = 'X1', ylab = 'Residuals', main = 'Residuals vs X1')
+boxplot(ei_reg_p3a, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals', main = 'Boxplot of residuals')
+hist(ei_reg_p3a, main = 'Histogram of Residuals')
+newer.par
+```
+
+From the Regression plots we see that 
+
+Residuals vs fitted values plot
+1. Shows a random distribution 
+2. There are fewer outliers present
+
+Q-Q plot
+1. The line is at 45 degrees
+2. values diverge only slightly after 1SD on positive and negative sides
+
+Scatterplot of x & y
+1. Shows a linear relationship
+
+Residuals vs X plot
+1. Shows a random relationship
+
+Boxplot
+1. Symmetrical with no outliers
+
+Histogram of residuals
+1. Is normally distributed.
+
+This shows us that the following regression assumptions are now satisfied
+
+1. Linearity of the regression function
+2. Error terms have constant variance
+3. Error terms are normally distributed
+4. Error terms are independent
+5. Model fits all but 1 or few outliers
+
+b-)Predict Y when X1=33,  X2=18,  X3=450, X4=11, X5=12, X6=0.05 and calculate the 99% confidence interval (10 points)
+
+```{r}
+# xh<-data.frame(size=c(30,65,100))
+
+xh <- data.frame(x = c(33, 18, 450, 11, 12, 0.05))
+pred_xh <- predict(reg_p3a, xh, se.fit = TRUE, interval = 'confidence', level = 0.99)
+
+# reversing square root transform of y
+y_pred <- pred_xh$fit^2
+y_pred
+```

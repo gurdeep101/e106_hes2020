@@ -1,0 +1,268 @@
+---
+title: "mid_term_e106"
+author: "Gurdeep"
+date: "25/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+
+setwd("/cloud/project/HW//mid_term_real") # change to local directory before running
+
+library(knitr)
+library(onewaytests)
+library(olsrr)
+library(lmtest)
+library(MASS)
+library(ALSM)
+
+```
+
+1a-) Create development sample and hold out sample. Development sample is a random sample of 70% of the data and hold out sample is the remainder 30% of the data. Use “set.seed(1023)” to select the samples. (5 pts)
+
+```{r}
+# read in the data set
+mtq1 <- read.csv('Midterm Q1 Data Set.csv')
+head(mtq1)
+colnames(mtq1)
+dim(mtq1)
+
+# number of values in development and hold out set
+n_dev <- round(0.7*nrow(mtq1))
+n_hold <- nrow(mtq1) - n_dev
+
+set.seed(1023)
+
+# index of the samples
+dev_ind <- sample(1:nrow(mtq1), n_dev)
+
+# create development and holdout samples
+mtq1_dev <- mtq1[dev_ind,]
+mtq1_hold <- mtq1[-dev_ind,]
+
+```
+
+The holdout and development samples are created as above. 
+
+b-) Build a regression model to predict Y as a function of X on the development sample. Write down the regression model, Is the regression model significant? (5 points)
+
+```{r}
+# fit the regression
+reg1b <- lm(y~x, data = mtq1_dev)
+summary(reg1b)
+ei_1b <- reg1b$residuals
+```
+The regression model is written as y = 1257.562 + 47.030 * x
+
+From the summary above we see that the regression has an F-statistic = 73.94 with p-value = 2.858e-16. 
+
+The p-values of the individual coefficients are also below the rejection thresholds (assuming 95% confidence levels). 
+
+Hence, we conclude that the regression is significant.
+
+c-) Obtain, the residuals and plot them against the fitted values. Also prepare a normal probability plot. What do your plots show? Conduct the Breusch-Pagan Test to determine whether or not the error variances are constant. (10 points)
+
+```{r}
+# plot residuals and other standard plots
+old.par <- par(mfrow = c(2,2))
+plot(reg1b)
+old.par
+
+newer.par = par(mfrow = c(2,2))
+plot(mtq1_dev$x, mtq1_dev$y, xlab = 'x', ylab = 'y', main = 'Scatter plot of given variables')
+plot(mtq1_dev$x,ei_1b, xlab = 'x', ylab = 'Residuals', main = 'Residuals vs X')
+boxplot(ei_1b, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals', main = 'Boxplot of residuals')
+hist(ei_1b, main = 'Histogram of Residuals')
+newer.par
+
+# BP Test
+bptest(reg1b)
+# Ho : Errors are normally distributed; no heteroskedasticicty
+# Ha : Errors are not normally distributed
+
+# Decision Rule: p-value > 0.05 ==> Accept Ho
+
+```
+
+From the Regression plots we see that 
+
+Residuals vs fitted values plot
+1. higher dispersion for positive residuals; not random 
+2. There are outliers present
+
+Q-Q plot
+1. The line is not 45 degrees
+2. values start diverging after +1.5 SD
+
+Scatterplot of x & y
+1. Shows a curvilinear relationship
+
+Residuals vs X plot
+1. Shows a dowsnward trending relationship; not random
+
+Boxplot
+1. high number of outliers for higher values of x
+
+Histogram of residuals
+1. Has a left skew and long right tail; not normally distributed.
+
+This shows us that the following regression assumptions are not satisfied
+
+1. Linearity of the regression function
+2. Error terms have constant variance
+3. Error terms are normally distributed
+4. Error terms are independent
+5. Model fits all but 1 or few outliers
+
+BP Test
+
+The above conclusions are also supported by the results of the B-P test. For the BP test we have the decision rule as 
+
+Ho : Errors are normally distributed; no heteroskedasticicty
+Ha : Errors are not normally distributed
+
+Decision Rule: p-value > 0.05 ==> Accept Ho
+
+The p-value of the BP test  = 0.00161. This is less than 0.05 threshold and we reject Ho and conclude that heteroskedasticity is present in the dataset.
+
+d-) Calculate the simultaneous 90% confidence interval for $\beta_{0}$,and $\beta_{1}$ and calculate the simultaneous 90% confidence intervals for the predicted new X values for 85 and 90. (10 pts)
+
+```{r}
+# simultaneous 90% confidence interval for beta0 and beta1
+confint(reg1b, level = 1-0.1/2) # family CI
+
+# simultaneous prediction intervals for new observations 
+# since new values are asked we use Bonferroni and Scheffe tests
+
+xh <- c(85,90)
+g <- length(xh)
+alpha <- 0.05
+
+ci.new <- predict.lm(reg1b, data.frame(x = c(xh)), se.fit = TRUE, level = 1-alpha)
+ci.new
+m <- rbind(rep(qt(1-alpha/(2*g), reg1b$df.residual),g), rep(sqrt(g*qf(1-alpha, g, reg1b$df.residual)),g) ) 
+# repeat t-value g times; repeat f-value g times
+m
+
+spred <- sqrt(ci.new$residual.scale^2 + (ci.new$se.fit)^2)
+spred
+
+# put all values in a transpose matrix
+pred.new <- t(rbind(
+  'Yh' = xh,
+  'spred' = spred,
+  'fit' = ci.new$fit,
+  'lower.B' = ci.new$fit - m[1,] * spred,
+  'upper.B' = ci.new$fit + m[1,] * spred,
+  'lower.s' = ci.new$fit - m[2,] * spred,
+  'upper.s' = ci.new$fit + m[2,] * spred))
+
+# display required value
+pred.new
+
+```
+
+Confidence intervals using Bonferoni and Schefe intervals are calculated above.
+
+e-) Use the Box-Cox procedure to find an appropriate power transformation and perform the transformation. Obtain, the residuals and plot them against the fitted values. Also prepare a normal probability plot. What do your plots show? (10 pts)
+
+```{r}
+# use the boxcox transformation
+boxcox(reg1b, lambda = seq(-1.0, 1.0,0.1))
+```
+
+From the boxcox transformation above we see that the recommended lambda value is closest to 0.5. It is easier to explain lambda = 0.5 which implies a square root transform of the y variable. Below we perform the same and redo regression and plots.
+
+```{r}
+# use the boxcox transformation
+# fit the regression
+reg1e <- lm(sqrt(y)~x, data = mtq1_dev)
+summary(reg1e)
+ei_1e <- reg1e$residuals
+
+# plot residuals and other standard plots
+old.par <- par(mfrow = c(2,2))
+plot(reg1e)
+old.par
+
+newer.par = par(mfrow = c(2,2))
+plot(mtq1_dev$x, sqrt(mtq1_dev$y), xlab = 'x', ylab = 'square root of y', main = 'Scatter plot of x with sq root of y variable')
+plot(mtq1_dev$x,ei_1e, xlab = 'x', ylab = 'Residuals', main = 'Residuals vs X')
+boxplot(ei_1e, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residuals', main = 'Boxplot of residuals')
+hist(ei_1e, main = 'Histogram of Residuals')
+newer.par
+
+# BP Test
+bptest(reg1e)
+# Ho : Errors are normally distributed; no heteroskedasticicty
+# Ha : Errors are not normally distributed
+
+# Decision Rule: p-value > 0.05 ==> Accept Ho
+
+```
+
+From the Regression plots we see that 
+
+Residuals vs fitted values plot
+1. Mostly random distribution
+2. There are outliers present but lesser and closer to the bulk of the distribution
+
+Q-Q plot
+1. The line is at 45 degrees
+2. Residuals start diverging only close to 2 SD
+
+Scatterplot of x & y
+1. Shows a linear relationship
+
+Residuals vs X plot
+1. Shows random distribution
+
+Boxplot
+1. Symmetrical with few outliers for higher values of x
+
+Histogram of residuals
+1. close to normal distribution
+
+This shows us that the following regression assumptions are now satisfied
+
+1. Linearity of the regression function
+2. Error terms have constant variance
+3. Error terms are normally distributed
+4. Error terms are independent
+5. Model fits all but 1 or few outliers
+
+BP Test
+
+The above conclusions are also supported by the results of the B-P test. For the BP test we have the decision rule as 
+
+Ho : Errors are normally distributed; no heteroskedasticicty
+Ha : Errors are not normally distributed
+
+Decision Rule: p-value > 0.05 ==> Accept Ho
+
+The p-value of the BP test  = 0.2353. This is greater than 0.05 threshold and we reject Ho and conclude that heteroskedasticity is not present in the dataset.
+
+f-) Calculate R Square on the hold out sample (hint: calculate SSE, SSR and SST on the hold out sample). Is the model performance robust? (10 pts)
+
+```{r}
+head(mtq1_hold)
+
+yhat_hold <- predict(reg1e, data.frame(x = mtq1_hold$x))^2
+ybar_hold <- mean(mtq1_hold$y)
+
+ssr_1f <- sum((yhat_hold - ybar_hold)^2)
+ssr_1f
+
+sst_1f <- sum((mtq1_hold$y - ybar_hold)^2)
+sst_1f
+
+r2 <- ssr_1f/sst_1f
+r2
+```
+
+The model has R2 of 0.13954 on the holdout set while the development set had an R2 of 0.1856. While the R2 value for both is low, the lower value of R2 for holdout set compared to development set is to be expected since the model is predicting for a dataset that it has not seen before. 
