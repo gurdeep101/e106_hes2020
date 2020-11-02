@@ -1,0 +1,253 @@
+---
+title: 'CSCI E-106:Assignment 6'
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: November 3, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Problem 1
+
+Refer to Commercial properties data set. A commercial real estate company evaluates vacancy rates, square footage, rental rates, and operating expenses for commercial properties in a large metropolitan area in order to provide clients with quantitative information upon which to make rental decisions.The variables in the data set are the age ($X_1$), operating expenses and taxes ($X_2$), vacancy rates ($X_3$), total square footage ($X_4$),and rental rates (Y). (35 points, 5 points each)
+
+
+a-) Obtain the scatter plot matrix and the correlation matrix. Interpret these and state your
+principal findings.
+
+```{r}
+# libraray read in
+rm(list = ls())
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW6") # change to local path
+
+library(knitr)
+library(onewaytests)
+library(olsrr)
+library(lmtest)
+library(MASS)
+library(ALSM)
+
+# load data and check
+prop <- read.csv('Commercial Properties Data Set.csv')
+colnames(prop)
+head(prop)
+colnames(prop) <- c('rental','age','opex','vac_rate','area')
+head(prop)
+
+str(prop)
+summary(prop)
+
+# create plots & correlation matrices
+corr_scat_func <- function(dfname) {
+  print(round(cor(dfname),3))
+  plot(dfname)
+}
+
+corr_scat_func(prop)
+```
+
+b-) Fit regression model for four predictor variables to the data. State the estimated
+regression function.
+
+```{r}
+reg1b <- lm(rental~., data = prop)
+summary(reg1b)
+ei_1b <- reg1b$residuals
+```
+
+c-) Obtain the residuals and prepare a box plot of the residuals. Does the distribution appear to be fairly symmetrical?  
+
+```{r}
+ei_1b[1:10] # printing 1st 10 variables
+
+# plots
+newer.par = par(mfrow = c(1,1))
+boxplot(ei_1b, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residual')
+hist(ei_1b, main = 'Histogram of Residuals')
+newer.par
+```
+
+d-)Conduct the Breusch-Pagan test for constancy of the elTor varhmce, assuming log $\sigma_{i}^{2}$=$\gamma_0$+$\gamma_1X_1$+$\gamma_2X_2$+$\gamma_3X_3$+$\gamma_4X_4$ use $\alpha$ = .01. State the alternatives, decision rule, and conclusion
+
+```{r}
+# BP Test
+bptest(reg1b)
+# Ho : Errors are normally distributed; no heteroskedasticicty
+# Ha : Errors are not normally distributed
+
+# Decision Rule: p-value > 0.05 ==> Accept Ho
+```
+
+e-) Obtain QQ plot and error vs. fitted values, and comment on the graphs.
+
+```{r}
+newer.par = par(mfrow = c(2,2))
+plot(reg1b)
+newer.par
+```
+f-) Estimate $\beta_0$, $\beta_1$, $\beta_2$, $\beta_3$ and $\beta_4$ jointly by the Bonferroni procedure, using a 95 percent family confidence coefficient. Interpret your results.
+
+```{r}
+
+
+```
+g-) $X_1$=5, $X_2$=8.25, $X_3$=0 and $X_4$=250000, calculate the predicted rental rate and 95% confidence interval
+
+## Problem 2
+Refer to the CDI data set. You have been asked to evaluate two alternative
+models for predicting the number of active ve physicians (Y) in a CDI. Proposed model I includes
+as predictor variables total population ($X_1$), land area ($X_2$), and total personal income ($X_3$). Proposed model II includes as predictor variables population density ($X_1$, total population divided by land area), percent of population greater than 64 years old ($X_2$), and total personal income ($X_3$).(40 points, 10 points each)
+
+a-) Obtain the scatter plot matrix and the correlation matrix for each proposed model. Summarize
+the information provided.
+
+```{r}
+# load data and check
+cdi <- read.csv('CDI Data.csv')
+colnames(cdi)
+head(cdi)
+
+# create df for proposed model 1
+cols_cdi1 <- c('Number.of.active.physicians', 'Total.population', 'Land.area', 'Total.personal.income')
+
+cdi_reg1 <- cdi[cols_cdi1]
+dim(cdi_reg1)
+colnames(cdi_reg1) <- c('Y', 'X1','X2','X3')
+head(cdi_reg1)
+
+# add new column
+cdi$population.density <- cdi$Total.population/cdi$Land.area
+
+# create df for proposed model 2
+cols_cdi2 <- c('Number.of.active.physicians', 'population.density', 'Percent.of.population.65.or.older', 'Total.personal.income')
+
+cdi_reg2 <- cdi[cols_cdi2]
+dim(cdi_reg2)
+colnames(cdi_reg2) <- c('Y', 'X1','X2','X3')
+head(cdi_reg2)
+
+# correlation values and scatter plots
+corr_scat_func(cdi_reg1)
+corr_scat_func(cdi_reg2)
+
+```
+b-) For each proposed model, fit the first-order regression model  with three predictor
+variables.
+
+```{r}
+# proposed model 1
+reg2b1 <- lm(Y~., data = cdi_reg1)
+summary(reg2b1)
+ei_2b1 <- reg2b1$residuals
+
+# proposed model 2
+reg2b2 <- lm(Y~., data = cdi_reg2)
+summary(reg2b2)
+ei_2b2 <- reg2b2$residuals
+```
+
+c-) Calculate $R^2$ for each model. Is one model clearly preferable in terms of this measure?
+
+```{r}
+summary(reg2b1)$r.squared
+summary(reg2b1)$adj.r.squared
+
+summary(reg2b2)$r.squared
+summary(reg2b2)$adj.r.squared
+```
+
+d-) For each model, obtain the residuals and plot them against $\hat{Y}$, each of the three predictor variables. Also prepare a normal probability plot for each of the two fitted models. Interpret your plots and state your findings. Is one model clearly preferable in terms of appropriateness?
+
+```{r}
+old.par <- par(mfrow = c(2,2))
+plot(ei_2b1,reg2b1$fitted.values)
+plot(ei_2b1,cdi_reg1$X1)
+plot(ei_2b1,cdi_reg1$X2)
+plot(ei_2b1,cdi_reg1$X3)
+old.par
+
+reg2b1_stdres = rstandard(reg2b1)
+qqnorm(reg2b1_stdres,ylab="Standardized Residuals",xlab="Normal Scores",main="Proposed Model 1") 
+qqline(reg2b1_stdres)
+
+reg2b2_stdres = rstandard(reg2b2)
+qqnorm(reg2b2_stdres,ylab="Standardized Residuals",xlab="Normal Scores",main="Proposed Model 2") 
+qqline(reg2b2_stdres)
+
+```
+
+## Problem 3
+
+Refer to Grocery retailer data set.A large, national grocery retailer tracks productivity and costs of its facilities closely.  Each data point for each variable represents one week of activity. The variables included are the number of cases shipped ($X_1$),the indirect costs of the total labor hours as a percentage ($X_2$), a qualitative predictor called holiday that is coded 1 if the week has a holiday and 0 otherwise ($X_3$), and the total labor hours (Y). (25 points, 5 points each)
+
+a-) Fit regression model to the data for three predictor variables. State the estimated
+regression function. How are $b_1$, $b_2$ , and $b_3$ interpreted here? (5 points)
+
+```{r}
+veg <- read.csv('Grocery Retailer Data Set.csv')
+dim(veg)
+head(veg)
+
+reg3a <- lm(Y~., data = veg)
+summary(reg3a)
+ei_3a <- reg3a$res
+```
+
+b-)Prepare a time plot of the residuals. Is there any indication of that the error terms are correlated?
+
+```{r}
+plot(sequence(nrow(veg)), ei_3a)
+
+```
+
+c-) Obtain the analysis of variance table that decomposes the regression sum of squares into
+extra sums of squares associated with $X_1$; with $X_3$ , given $X_1$; and with $X_2$ , given $X_1$, and $X_3$. 
+
+```{r}
+f1 <- lm(Y~X1, data = veg)
+f13 <- lm(Y~X1 + X3, data = veg)
+
+a1 <- anova(f1)
+a1
+a13 <- anova(f13)
+a13
+
+f2 <- lm(Y~X2, data = veg)
+f2_13 <- lm(Y~X2 + X1 + X3, data = veg)
+
+a2 <- anova(f2)
+a2
+a2_13 <- anova(f2_13)
+a2_13
+
+```
+
+d-) Test whether $X_2$ can be dropped from the regression model given that $X_1$, and $X_3$ are retained. Use the F* test statistic and $\alpha$ = .05. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+
+```{r}
+f13 <- lm(Y~X1+X3, data = veg)
+f13_2 <- lm(Y~X1+X2+X3, data = veg)
+
+anova(f13_2,f13)
+
+```
+
+e-) Does SSR($X_1$)+SSR($X_2$/$X_1$) equal SSR($X_2$)+SSR($X_1$/$X_2$) here? Must this always be the case? (5 points)
+
+```{r}
+
+
+```

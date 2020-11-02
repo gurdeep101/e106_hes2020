@@ -1,0 +1,18 @@
+Variable Name,Description
+Identification number,1-440
+County,County name
+State,Two-letter state abbreviation
+Land area,Land area (square miles)
+Total population,Estimated 1990 population
+Percent of population aged 18-34,Percent of 1990 CDI population aged 18-34
+Percent of population 65 or older,Percent of 1990 CDI population aged 65 years old or older
+Number of active physicians,Number of professionally active nonfederal physicians during 1990
+Number of hospital beds,"Total number of beds, cribs, and bassinets during 1990"
+Total serious crimes,"Total number of serious crimes in 1990, including murder, rape, robbery, aggravated assault, burglary, larceny-theft, and motor vehicle theft, as reported by law enforcement agencies"
+Percent high school graduates,Percent of adult population (persons 25 years old or older) who completed 12 or more years of school
+Percent bachelor's degrees,Percent of adult population (persons 25 years old or older) with bachelor's degree
+Percent below poverty level,Percent of 1990 CDI population with income below poverty level
+Percent unemployment,Percent of 1990 CDI labor force that is unemployed
+Per capita income,Per capita income of 1990 CDI population (dollars)
+Total personal income,Total personal income of 1990 CDI population (in millions of dollars)
+Geographic region,"Geographic region classification is that used by the U.S. Bureau of the Census, where: 1 = NE, 2 = NC, 3 = S, 4 = W"

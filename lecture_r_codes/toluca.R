@@ -11,6 +11,7 @@ head(toluca)
 fitreg <- lm(hrs~size, data = toluca)
 summary(fitreg)
 res <- fitreg$residuals
+anova(fitreg)
 
 # getting confidence interval
 confint(fitreg, level = 0.95)
