@@ -1,0 +1,178 @@
+---
+title: 'CSCI E-106:Assignment 7'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: November 9, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Solutions
+
+## Problem 1
+
+Use the fortune data under the faraway r library, data(fortune,package="faraway"). The wealth in billions of dollars for 232 billionaires is given in fortune. (50 points, 10 points each) (Hint: refer to the interaction.pdf and rmd files for details)
+
+a-)Plot the wealth as a function of age using a different plotting symbol for the different regions of the world.
+All regions look similar and it is diffuclt to regions from each other.
+```{r}
+data(fortune,package="faraway")
+require(ggplot2)
+par(mfrow=c(1,1))
+plot(wealth ~ age, fortune, pch=unclass(region))
+legend(5,38,levels(fortune$region),pch=1:5)
+```
+
+b-)Plot the wealth as a function of age with a separate panel for each region 
+
+Wealth and age distribution look very similar for each region. There are outliers in region M (with respect to age and wealth.)
+
+```{r}
+par(mfrow=c(1,1))
+ggplot(aes(x=age,y=wealth),data=fortune) + geom_point() + facet_wrap( ~ region)
+```
+
+c-)Determine a transformation on the response to facilitate linear modeling.
+it is difficult to see the transformation visually. I used boxcox which is suggesting 1/Wealth, however log(wealth) and $\sqrt{wealth}$ are common choices with this type of data sets. 
+
+```{r}
+f<-lm(wealth ~ age*region,data=fortune)
+library(MASS)
+boxcox(f,lambda=seq(-2,2,0.1))
+```
+
+d-)What is the relationship of age and region to wealth?
+
+There is no relationship
+```{r}
+summary(f)
+```
+
+e-)Check the assumptions of your model using appropriate diagnostics.
+Heavy tails and unequal variances
+
+```{r}
+f1<-lm(1/wealth ~ age*region,data=fortune)
+par(mfrow=c(2,2))
+plot(f1)
+```
+
+## Problem 2
+
+Refer to the CDI data set. A regression model relating serious crime rate (Y, total serious crimes divided by total population) to population density ($X_1$, total population divided by land area) and unemployment rate ($X_3$) is to be constructed. (30 points, 10 points each)
+
+a-) Fit second-order regression model. Plot the residuals against the fitted values. How well does the second-order model appear to fit the data? What is $R^2$?
+
+The $R^2$ is 24%. The only X1 and X1*X3 (interaction term) are significant.
+```{r}
+CDI<- read.csv("/cloud/project/Fall 2020/CDI Data.csv")
+CDI[,18]=CDI$Total.serious.crimes/CDI$Total.population
+dimnames(CDI)[[2]][18]<-"Serious.crime.rate"
+
+CDI[,19]=CDI$Total.population/CDI$Land.area
+dimnames(CDI)[[2]][19]<-"Population.density"
+
+Y=CDI$Serious.crime.rate
+X1=CDI$Population.density
+X3=CDI$Percent.unemployment
+
+#centering the variables, subtracting the mean
+x1<-scale(X1, scale = FALSE)
+x3<-scale(X3, scale = FALSE)
+
+x11=x1^2
+x33=x3^2
+x13=x1*x3
+
+
+f<-lm(Y~x1+x3+x11+x33+x13)
+summary(f)
+
+```
+
+b-) Test whether or not all quadratic and interaction terms can be dropped from the regression model; use $\alpha$ = .01. State the alternatives, decision rule, and conclusion.
+
+$H_0$: The variables can be dropped
+$H_a$: The variables can NOT be dropped
+
+P value is 0.02 > 0.01. Accept,$H_0$. The variables can be dropped from the model.
+```{r}
+fr<-lm(Y~x1+x3)
+summary(fr)
+anova(fr,f,test="F")
+```
+
+
+c-) Instead of the predictor variable population density, total population ($X_1$) and land area ($X_2$) are to be employed as separate predictor variables, in addition to unemployment rate ($X_3$). The regression model should contain linear and quadratic terms for total population, and linear terms only for land area and unemployment rate. (No interaction terms are to be included in this model.) Fit this regression model and obtain $R^2$. Is this coefficient of multiple determination substantially different from the one for the regression model in part (a)?
+
+The $R^2$ is 14%. The only X1 and $X1^2$ are significant.The model in part a has a higher $R^2$.
+
+```{r}
+Y=CDI$Serious.crime.rate
+X1=CDI$Total.population
+X2=CDI$Land.area
+X3=CDI$Percent.unemployment
+
+#centering the variables, subtracting the mean
+x1<-scale(X1, scale = FALSE)
+x2<-scale(X2, scale = FALSE)
+x3<-scale(X3, scale = FALSE)
+
+x11=x1^2
+x22=x2^2
+x33=x3^2
+
+g<-lm(Y~x1+x11+X2+X3)
+summary(g)
+```
+
+
+## Problem 3 
+
+Refer to the CDI data set. The number of active physicians (Y) is to be regressed against total population ($X_1$, total personal income ($X_2$), and geographic region ($X_3$, $X_4$ , $X_5$). (20 points, 10 points each)
+
+("Geographic region classification is that used by the U.S. Bureau of the Census, where: 1 = NE, 2 = NC, S = 3, W=4")
+
+a-)  Fit a first-order regression model. Let $X_3$ = 1 if NE and 0 otherwise, $X_4$ = 1 if NC and 0 otherwise, and $X_5$ = 1 if S and 0 otherwise. Examine whether the effect for the northeastern region on number of active physicians differs from the effect for the north central region by constructing an appropriate 90 percent
+confidence interval. Interpret your interval estimate.
+
+$R^2$ is 90%. X1,X2, and X5 are significant variables. When we look at the simultaneous confidence interval for $\beta_3$ and $\beta_4$, they are very close to each other and the coefficients are also very close to each other (149 vs 145). Their impacts are similar.
+```{r}
+Y=CDI$Number.of.active.physicians
+X1=CDI$Total.population
+X2=CDI$Total.personal.income
+
+X3=as.numeric(CDI$Geographic.region==1)
+X4=as.numeric(CDI$Geographic.region==2)
+X5=as.numeric(CDI$Geographic.region==3)
+
+g<-lm(Y~X1+X2+X3+X4+X5)
+summary(g)
+confint(g,level=1-0.10/2)
+
+```
+
+
+b-) Test whether any geographic effects are present; use $\alpha$ = .10. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+
+$H_0$: Geographic variables can be dropped 
+$H_a$: Geographic variables can NOT be dropped
+
+P value os 0.12. Accept $H_0$. Geographic variables can be dropped 
+```{r}
+g1<-lm(Y~X1+X2)
+anova(g1,g)
+```
+

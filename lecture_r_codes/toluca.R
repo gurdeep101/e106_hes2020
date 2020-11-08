@@ -18,7 +18,7 @@ confint(fitreg, level = 0.95)
 
 # predict values 
 predict(fitreg, data.frame(size = 100), se.fit = TRUE, interval = 'confidence', level = 0.9)
-predict(fitreg, data.frame(size = c(10,20), se.fit = TRUE, interval = 'confidence', level = 0.90)
+predict(fitreg, data.frame(size = c(10,20)), se.fit = TRUE, interval = 'confidence', level = 0.90)
 
 # get prediction interval; will be wider than confidence interval
 predict(fitreg, data.frame(size = 100), se.fit = TRUE, interval = 'prediction', level = 0.90)
@@ -48,7 +48,6 @@ qnorm(ppoints(length(res)), mean(res), sd(res))
 new.par
 
 # BF Test
-
 bf.data <- data.frame(cbind(toluca, fitreg$residuals, fitreg$fitted.values))
 
 dimnames(bf.data) # all dim names
@@ -57,7 +56,6 @@ dimnames(bf.data)[[2]] # column names
 dimnames(bf.data)[[2]][3] # 3rd column
 dimnames(bf.data)[[2]][3:4] # 3rd and 4th column
 dim(bf.data)
-
 
 dimnames(bf.data)[[2]][3:4] <- c('residuals', 'fitted.values')
 
@@ -72,7 +70,13 @@ bf.test(residuals~ind, data = bf.data1)
 # Decision Rule 
 # p-value > 0.05 ==> Accept Ho
 
-# BP Test
+# Shapiro test for normality
+# Ho : Errors are normally distributed
+# Ha : Errors are not normally distributed
+
+shapiro.test(fitreg$residuals)
+
+# BP Test for constancy of error variance
 bptest(fitreg)
 # Ho : Errors are normally distributed; no heteroskedasticicty
 # Ha : Errors are not normally distributed

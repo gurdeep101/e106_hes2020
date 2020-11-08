@@ -1,0 +1,220 @@
+---
+title: 'CSCI E-106:Fall 2020 Midterm Solutions'
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Instructions
+
+1.	Open book and open notes exam ( textbooks (print or pdf), lecture slides, notes, practice exam, homework solutions, and TA slides, including all Rmd's*).
+
+2.	You are allowed to use RStudio Cloud (https://rstudio.cloud.), Microsoft Word, Power Point and PDF reader, and canvas on your laptop.
+
+3.	You need to have a camera on your laptop. Proctorio is required to start this exam. If you are prompted for an access code, you must Configure Proctorio on your machine. 
+
+4.	Please read the list of recording and restrictions provided by Proctorio carefully before taking the exam 
+
+5.	Please pay attention any timing and technical warnings that popped up your screen 
+
+6.	The exam will be available from Friday October 23rd at 12 pm EST through Monday October 26th at 7:20 pm EST.
+
+7.	Once you start the exam, you have to complete the exam in 3 hours or by Monday October 26th at 7:20 pm EST, whichever comes first.
+
+8.	In order to receive full credit, please provide full explanations and calculations for each question 
+
+9.	Make sure that you are familiar with the procedures for troubleshooting exam issues preview the document. Follow the protocol if there are any issues!
+
+---------------------------------------------------------------------------------------------------------------
+
+## Problem 1
+
+Refer to the Midterm Q1 Data set. (50 Points)
+
+a-) Create development sample and hold out sample. Development sample is a random sample of 70% of the data and hold out sample is the remainder 30% of the data. Use set.seed(1023) to select the samples. (5 pts)
+
+There are 496 observations, there will be 347 observations in the development sample and 149 observations on the holdout sample. Y and X are moderatly correlated. 
+
+```{r}
+Q1.DS <- read.csv("/cloud/project/Midterm Q1 Data Set.csv")
+str(Q1.DS)
+cor(Q1.DS)
+set.seed(1023)
+IND<-sample(c(1:496),round(496*0.7))
+dev.samp<-Q1.DS[IND,]
+hold.out<-Q1.DS[-c(IND),]
+
+```
+b-) Build a regression model to predict Y as a function of X on the development sample. Write down the regression model, Is the regression model significant? (5 points)
+
+the regression model is significant. Y = 1160.37  + 49.07 X.  $R^{2}$ is 20% and the model is significant.  
+
+```{r}
+f1<-lm(y~x,data=dev.samp)
+summary(f1)
+
+```
+
+c-) Obtain, the residuals and plot them against the fitted values. Also prepare a normal probability plot. What do your plots show? Conduct the Breusch-Pagan Test to determine whether or not the error variances are constant . (10 points)
+
+QQ plot indicates the data is skewed right. There could be outliers in the data set. Further examination is needed. Error vs. Fitted values indicate that error variances are not equal. 
+
+The Breusch-Pagan Test:
+
+H_{0}:$\gamma_{1} = 0$
+H_{a}:$\gamma_{1} \neq 0$
+
+p value is <0.05. H_{0} is rejected, the error variances are not equal. 
+
+```{r}
+ei<-f1$residuals
+yhat<-f1$fitted.values
+par(mfrow=c(1,2))
+plot(yhat,ei,ylab="Errors",xlab="Fitted Values")
+stdei<- rstandard(f1)
+qqnorm(stdei,ylab="Standardized Residuals",xlab="Normal Scores", main="QQ Plot")
+qqline(stdei,col = "steelblue", lwd = 2)
+anova(f1)
+ei2<-ei^2
+g<-lm(ei2~dev.samp$x)
+anova(g)
+
+SSR=  194348752489180 
+SSE=  599821203
+Chi.Square=(SSR / 2) / ((SSE/347)^2)
+1-pchisq(Chi.Square,1)
+
+```
+
+d-)	Calculate the simultaneous 99% confidence interval for $\beta_{0}$,and $\beta_{1}$ and calculate the simultaneous 95% confidence intervals for the predicted new X values for 85 and 90. (10 pts)
+
+The simultaneous 99% confidence interval for $\beta_{0}$,and $\beta_{1}$ are
+$759.31 \leq \beta_{0} \leq 1561.42$
+$33.96 \leq \beta_{1} \leq   64.19$
+
+The simultaneous prediction interval for the new X values for 85 and 90 are below in the r code.
+```{r}
+confint(f1,level=1-0.01/2)
+pred<-predict.lm(f1,data.frame(x<-c(85,90)),se.fit = TRUE)
+fit<-pred$fit
+fit
+s.pred<-sqrt(pred$se.fit^2+pred$residual.scale^2)
+S=sqrt(2*qf(0.95,2,345))
+B=qt(1-0.05/(2*2),345)
+cbind(B,S)
+cbind(pred$fit-B*s.pred,pred$fit+B*s.pred)
+```
+
+e-)	Use the Box-Cox procedure to find an appropriate power transformation and perform the transformation.  Obtain, the residuals and plot them against the fitted values. Also prepare a normal probability plot. What do your plots show? (10 pts)
+
+It looks like $\lambda$ is 0.34. However, you could also use either $\lambda$  0.5 (square root transformation) or $\lambda$  is 0 (log transformation) to make the transformation more easier. I used $\lambda$ is 0.34. 
+
+the regression model is significant. $Y^{0.34}$ = 11.03  + 0.098 X.  $R^{2}$ is 20% and the model is significant.  
+
+QQ plots look normal. However, error vs predicted graph still shows a V shape. Unequal variances still persists. 
+
+```{r}
+library(MASS)
+par(mfrow=c(1,1))
+boxcox(f1,lambda=seq(-2,2,by=0.1))
+boxcox(f1,lambda=seq(0.0,1,by=0.1))
+boxcox(f1,lambda=seq(0.2,0.5,by=0.1))
+f1.2<-lm(y^0.34~x,data=dev.samp)
+summary(f1.2)
+ei<-f1.2$residuals
+yhat<-f1.2$fitted.values
+par(mfrow=c(1,2))
+plot(yhat,ei,ylab="Errors",xlab="Fitted Values")
+ei2<-ei^2
+g<-lm(ei2~dev.samp$x)
+summary(g)
+
+stdei<- rstandard(f1.2)
+qqnorm(stdei,ylab="Standardized Residuals",xlab="Normal Scores", main="QQ Plot")
+qqline(stdei,col = "steelblue", lwd = 2)
+```
+
+f-) Calculate R Square on the hold out sample (hint: calculate SSE, SSR and SST on the hold out sample). Is the model performance robust? (10 pts)
+
+$R^{2}$ on the hold out sample is 9.2%. Whereas, the $R^{2}$ on the development sample is 20%. The model performance was significantly worsened on the hold out sample. The model is not robust.
+
+```{r}
+SST<-var(hold.out$y)*(length(hold.out$y)-1)
+pred<-predict(f1.2,hold.out)
+ei<-hold.out$y-(pred^(1/0.34))
+SSE<-sum(ei^2)
+R.SQ=1-(SSE/SST)
+R.SQ
+```
+
+
+## Problem 2
+
+Refer to the Midterm Q2 Data set (30 Points)
+
+Perform one factor analysis by finding the best variable to explain Y. Fit one variable regression model with Y as a dependent variable against remaining variables, as an independent variable one at a time. Choose the variable with highest $R^{2}$ that explains Y and comment on the QQ plot and error vs. fitted values graph for the model assumptions.
+
+$X_{4}$, $X_{5}$, and $X_{4}$, $X_{6}$ are NOT significant. $X_{1}$, $X_{2}$, and $X_{3}$, $X_{6}$ are significant.  $X_{1}$ is the best variable. The $R^{2}$s are below. 
+
+model with x1: $R^{2}$ is 94%
+model with x2: $R^{2}$ is 38%
+model with x3: $R^{2}$ is 54%
+model with x4: $R^{2}$ is 0%
+model with x5: $R^{2}$ is 0.02%
+model with x6: $R^{2}$ is 0%
+
+QQ plot indicates heavy tails, Residual vs. Fitted graph shows an evidence of unequal variances.
+
+```{r}
+Q2.DS <- read.csv("/cloud/project/Midterm Q2 Data Set.csv")
+f1<-lm(Y~X1,data=Q2.DS)
+f2<-lm(Y~X2,data=Q2.DS)
+f3<-lm(Y~X3,data=Q2.DS)
+f4<-lm(Y~X4,data=Q2.DS)
+f5<-lm(Y~X5,data=Q2.DS)
+f6<-lm(Y~X6,data=Q2.DS)
+summary(f1)
+summary(f2)
+summary(f3)
+summary(f4)
+summary(f5)
+summary(f6)
+par(mfrow=c(2,2))
+plot(f1)
+
+```
+
+## Problem 3
+
+Based on your final model selected on problem 2.
+
+a-) is the linear fit appropriate? If not, transform the data and find an appropriate fit. Comment on the model and regression model assumptions. (10 points)
+
+The linear fit is appropriate, however Box-Cox transformation suggest the square root of transformation of Y, which is a good solution for heavy tail distribution. After the transformation, QQ plots looks normal and there is no further evidence of unequal variances exist. The new model is $\sqrt{Y}$= 2.5 + 0.19$X_{1}$ and $R^{2}$ is 95% and the model is signficant, the graphs indicate that all regression model assumptionsn are met.
+
+```{r}
+par(mfrow=c(1,1))
+plot(Q2.DS$X1,Q2.DS$Y)
+abline(f1)
+boxcox(f1,lambda=seq(-2,2,by=0.1))
+boxcox(f1,lambda=seq(0.0,1,by=0.1))
+f2.1<-lm(sqrt(Y)~X1,data=Q2.DS)
+summary(f2.1)
+par(mfrow=c(2,2))
+plot(f2.1)
+```
+
+
+b-) Predict Y when $X_1$=33,$X_2$=18,$X_3$=450,$X_4$=11,$X_5$=12,$X_6$=0.05
+, and calculate the 99% confidence interval (10 points). Y is predicted to be 79 and 99% confidence interval is 68$\leq$ $\hat(Y)$  $\leq$ 91.
+`
+```{r}
+pred<-predict.lm(f2.1,data.frame(X1 = 33),interval =  "confidence",level=0.99)
+pred^2
+```

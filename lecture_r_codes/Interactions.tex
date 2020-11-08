@@ -1,0 +1,633 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={R Notebook},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+
+\title{R Notebook}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\#\#Interactions
+
+A homeowner in England recorded his weekly natural gas consumption, in
+thousands of cubic feet, during two winter heating seasons. For the
+second season, cavity wall insulation had been installed.
+
+The homeowner also recorded the average weekly temperature in degrees
+Celsius because this would also affect gas consumption. The data may be
+found in the MASS package
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data}\NormalTok{(whiteside,}\DataTypeTok{package=}\StringTok{"MASS"}\NormalTok{)}
+\KeywordTok{require}\NormalTok{(ggplot2)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: ggplot2
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{Temp,}\DataTypeTok{y=}\NormalTok{Gas),}\DataTypeTok{data=}\NormalTok{whiteside)}\OperatorTok{+}\KeywordTok{geom_point}\NormalTok{()}\OperatorTok{+}\KeywordTok{facet_grid}\NormalTok{(}\OperatorTok{~}\StringTok{ }\NormalTok{Insul)}\OperatorTok{+}\KeywordTok{geom_smooth}\NormalTok{(}\DataTypeTok{method=}\StringTok{"lm"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## `geom_smooth()` using formula 'y ~ x'
+\end{verbatim}
+
+\includegraphics{Interactions_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+We can see that less gas is used after the insulation is installed but
+the difference varies by temperature. The relationships appear linear so
+we fit a model:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lmod <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(Gas }\OperatorTok{~}\StringTok{ }\NormalTok{Temp}\OperatorTok{*}\NormalTok{Insul, whiteside)}
+\KeywordTok{summary}\NormalTok{(lmod)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = Gas ~ Temp * Insul, data = whiteside)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.97802 -0.18011  0.03757  0.20930  0.63803 
+## 
+## Coefficients:
+##                 Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      6.85383    0.13596  50.409  < 2e-16 ***
+## Temp            -0.39324    0.02249 -17.487  < 2e-16 ***
+## InsulAfter      -2.12998    0.18009 -11.827 2.32e-16 ***
+## Temp:InsulAfter  0.11530    0.03211   3.591 0.000731 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.323 on 52 degrees of freedom
+## Multiple R-squared:  0.9277, Adjusted R-squared:  0.9235 
+## F-statistic: 222.3 on 3 and 52 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+We would predict that the gas consumption would fall by 0.393 for each
+1°C increase in temperature before insulation. After insulation, the
+fall in consumption per degree is only 0.393 - 0.115 = 0.278. But the
+interpretation for the other two parameter estimates is more problematic
+since these represent predicted consumption when the temperature is
+zero. This is on the lower edge of the observed range of temperatures
+and would not represent a typical difference. For other datasets, a
+continuous predictor value of zero might be far outside the range and so
+these parameters would have little practical meaning.The solution is to
+center the temperature predictor by its mean value and recompute the
+linear model:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{mean}\NormalTok{(whiteside}\OperatorTok{$}\NormalTok{Temp)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 4.875
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{whiteside}\OperatorTok{$}\NormalTok{ctemp <-}\StringTok{ }\NormalTok{whiteside}\OperatorTok{$}\NormalTok{Temp }\OperatorTok{-}\StringTok{ }\KeywordTok{mean}\NormalTok{(whiteside}\OperatorTok{$}\NormalTok{Temp)}
+\NormalTok{lmodc <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(Gas }\OperatorTok{~}\StringTok{ }\NormalTok{ctemp}\OperatorTok{*}\NormalTok{Insul, whiteside)}
+\KeywordTok{summary}\NormalTok{(lmodc)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = Gas ~ ctemp * Insul, data = whiteside)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.97802 -0.18011  0.03757  0.20930  0.63803 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       4.93679    0.06424  76.848  < 2e-16 ***
+## ctemp            -0.39324    0.02249 -17.487  < 2e-16 ***
+## InsulAfter       -1.56787    0.08771 -17.875  < 2e-16 ***
+## ctemp:InsulAfter  0.11530    0.03211   3.591 0.000731 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.323 on 52 degrees of freedom
+## Multiple R-squared:  0.9277, Adjusted R-squared:  0.9235 
+## F-statistic: 222.3 on 3 and 52 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+Now we can say that the average consumption before insulation at the
+average temperature was 4.94 and 4.94 - 1.57 = 3.37 afterwards. The
+other two coefficients are unchanged and their interpretation remains
+the same. Thus we can see that centering allows a more natural
+interpretation of the parameter estimates in the presence of
+interaction.
+
+\#\#Factors With More Than Two Levels
+
+With multiple levels, it can be hard to distinguish the groups.
+Sometimes it is better to plot each level separately. This can be
+achieved nicely with the help of the ggplot2 package:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data}\NormalTok{(fruitfly,}\DataTypeTok{package=}\StringTok{"faraway"}\NormalTok{)}
+\KeywordTok{plot}\NormalTok{(longevity }\OperatorTok{~}\StringTok{ }\NormalTok{thorax, fruitfly, }\DataTypeTok{pch=}\KeywordTok{unclass}\NormalTok{(activity))}
+\KeywordTok{legend}\NormalTok{(}\FloatTok{0.63}\NormalTok{,}\DecValTok{100}\NormalTok{,}\KeywordTok{levels}\NormalTok{(fruitfly}\OperatorTok{$}\NormalTok{activity),}\DataTypeTok{pch=}\DecValTok{1}\OperatorTok{:}\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Interactions_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{require}\NormalTok{(ggplot2)}
+\KeywordTok{ggplot}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x=}\NormalTok{thorax,}\DataTypeTok{y=}\NormalTok{longevity),}\DataTypeTok{data=}\NormalTok{fruitfly) }\OperatorTok{+}\StringTok{ }\KeywordTok{geom_point}\NormalTok{() }\OperatorTok{+}\StringTok{ }\KeywordTok{facet_wrap}\NormalTok{( }\OperatorTok{~}\StringTok{ }\NormalTok{activity)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Interactions_files/figure-latex/unnamed-chunk-4-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lmod <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(longevity }\OperatorTok{~}\StringTok{ }\NormalTok{thorax}\OperatorTok{*}\NormalTok{activity, fruitfly)}
+\KeywordTok{summary}\NormalTok{(lmod)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = longevity ~ thorax * activity, data = fruitfly)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -25.9509  -6.7296  -0.9103   6.1854  30.3071 
+## 
+## Coefficients:
+##                     Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)         -50.2420    21.8012  -2.305    0.023 *  
+## thorax              136.1268    25.9517   5.245 7.27e-07 ***
+## activityone           6.5172    33.8708   0.192    0.848    
+## activitylow          -7.7501    33.9690  -0.228    0.820    
+## activitymany         -1.1394    32.5298  -0.035    0.972    
+## activityhigh        -11.0380    31.2866  -0.353    0.725    
+## thorax:activityone   -4.6771    40.6518  -0.115    0.909    
+## thorax:activitylow    0.8743    40.4253   0.022    0.983    
+## thorax:activitymany   6.5478    39.3600   0.166    0.868    
+## thorax:activityhigh -11.1268    38.1200  -0.292    0.771    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 10.71 on 114 degrees of freedom
+## Multiple R-squared:  0.6534, Adjusted R-squared:  0.626 
+## F-statistic: 23.88 on 9 and 114 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#model.matrix(lmod)}
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{))}
+\KeywordTok{plot}\NormalTok{(lmod)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Interactions_files/figure-latex/unnamed-chunk-4-3.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{anova}\NormalTok{(lmod)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Variance Table
+## 
+## Response: longevity
+##                  Df  Sum Sq Mean Sq F value    Pr(>F)    
+## thorax            1 15003.3 15003.3 130.733 < 2.2e-16 ***
+## activity          4  9634.6  2408.6  20.988 5.503e-13 ***
+## thorax:activity   4    24.3     6.1   0.053    0.9947    
+## Residuals       114 13083.0   114.8                      
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mfrow=}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+The plot makes it clearer that longevity for the high activity group is
+lower. Since ``isolated'' is the reference level, the fitted regression
+line within this group is longevity= -50.2 + 136.1\emph{thorax. For
+``many,'' it is longevity= (-50.2 -1.1) + (136.1 + 6.5)}thorax. Similar
+calculations can be made for the other groups.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(}\KeywordTok{model.matrix}\NormalTok{(lmod))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   (Intercept) thorax activityone activitylow activitymany activityhigh
+## 1           1   0.68           0           0            1            0
+## 2           1   0.68           0           0            1            0
+## 3           1   0.72           0           0            1            0
+## 4           1   0.72           0           0            1            0
+## 5           1   0.76           0           0            1            0
+## 6           1   0.76           0           0            1            0
+##   thorax:activityone thorax:activitylow thorax:activitymany thorax:activityhigh
+## 1                  0                  0                0.68                   0
+## 2                  0                  0                0.68                   0
+## 3                  0                  0                0.72                   0
+## 4                  0                  0                0.72                   0
+## 5                  0                  0                0.76                   0
+## 6                  0                  0                0.76                   0
+\end{verbatim}
+
+There is perhaps some heteroscedasticity, but we will let this be until
+later for ease of presentation. Now we see whether the model can be
+simplified. The model summary output is not suitable for this purpose
+because there are four t-tests corresponding to the interaction term
+while we want just a single test for this term.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{anova}\NormalTok{(lmod)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Variance Table
+## 
+## Response: longevity
+##                  Df  Sum Sq Mean Sq F value    Pr(>F)    
+## thorax            1 15003.3 15003.3 130.733 < 2.2e-16 ***
+## activity          4  9634.6  2408.6  20.988 5.503e-13 ***
+## thorax:activity   4    24.3     6.1   0.053    0.9947    
+## Residuals       114 13083.0   114.8                      
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+This is a sequential analysis of variance (ANOVA) table. Starting from a
+null model, terms are added and sequentially tested. The interaction
+term thorax:activity is not significant, indicating that we can fit the
+same slope within each group. No further simplification is possible.
+
+We notice that the F-statistic for the test of the interaction term is
+very small and its p-value close to one. For these data, the fitted
+regression lines to the five groups happen to be very close to parallel.
+This can, of course, just happen by chance. In some other cases,
+unusually large p-values have been used as evidence that data have been
+tampered with or ``cleaned'' to improve the fit.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lmodp <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(longevity }\OperatorTok{~}\StringTok{ }\NormalTok{thorax}\OperatorTok{+}\NormalTok{activity, fruitfly)}
+\KeywordTok{drop1}\NormalTok{(lmodp,}\DataTypeTok{test=}\StringTok{"F"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Single term deletions
+## 
+## Model:
+## longevity ~ thorax + activity
+##          Df Sum of Sq   RSS    AIC F value    Pr(>F)    
+## <none>                13107 589.92                      
+## thorax    1   12368.4 25476 670.32 111.348 < 2.2e-16 ***
+## activity  4    9634.6 22742 650.25  21.684 1.974e-13 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(lmodp)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = longevity ~ thorax + activity, data = fruitfly)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -26.108  -7.014  -1.101   6.234  30.265 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   -48.749     10.850  -4.493 1.65e-05 ***
+## thorax        134.341     12.731  10.552  < 2e-16 ***
+## activityone     2.637      2.984   0.884   0.3786    
+## activitylow    -7.015      2.981  -2.353   0.0203 *  
+## activitymany    4.139      3.027   1.367   0.1741    
+## activityhigh  -20.004      3.016  -6.632 1.05e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 10.54 on 118 degrees of freedom
+## Multiple R-squared:  0.6527, Adjusted R-squared:  0.638 
+## F-statistic: 44.36 on 5 and 118 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+Returning to the diagnostics: A log transformation can remove the
+heteroscedasticity:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{plot}\NormalTok{(}\KeywordTok{residuals}\NormalTok{(lmodp) }\OperatorTok{~}\KeywordTok{fitted}\NormalTok{(lmodp),}\DataTypeTok{pch=}\KeywordTok{unclass}\NormalTok{(fruitfly}\OperatorTok{$}\NormalTok{activity),}\DataTypeTok{xlab=}\StringTok{"Fitted"}\NormalTok{,}\DataTypeTok{ylab=}\StringTok{"Residuals"}\NormalTok{)}
+\KeywordTok{abline}\NormalTok{(}\DataTypeTok{h=}\DecValTok{0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Interactions_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lmodl <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(}\KeywordTok{log}\NormalTok{(longevity) }\OperatorTok{~}\StringTok{ }\NormalTok{thorax}\OperatorTok{+}\NormalTok{activity, fruitfly)}
+\KeywordTok{plot}\NormalTok{(}\KeywordTok{residuals}\NormalTok{(lmodl) }\OperatorTok{~}\StringTok{ }\KeywordTok{fitted}\NormalTok{(lmodl),}\DataTypeTok{pch=}\KeywordTok{unclass}\NormalTok{(fruitfly}\OperatorTok{$}\NormalTok{activity), }\DataTypeTok{xlab=}\StringTok{"Fitted"}\NormalTok{,}\DataTypeTok{ylab=}\StringTok{"Residuals"}\NormalTok{)}
+\KeywordTok{abline}\NormalTok{(}\DataTypeTok{h=}\DecValTok{0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Interactions_files/figure-latex/unnamed-chunk-8-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{summary}\NormalTok{(lmodl)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = log(longevity) ~ thorax + activity, data = fruitfly)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.52641 -0.13629 -0.00823  0.13918  0.39273 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   1.84421    0.19882   9.276 1.04e-15 ***
+## thorax        2.72146    0.23329  11.666  < 2e-16 ***
+## activityone   0.05174    0.05468   0.946   0.3459    
+## activitylow  -0.12387    0.05463  -2.268   0.0252 *  
+## activitymany  0.08791    0.05546   1.585   0.1156    
+## activityhigh -0.41925    0.05527  -7.586 8.35e-12 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.1931 on 118 degrees of freedom
+## Multiple R-squared:  0.7025, Adjusted R-squared:  0.6899 
+## F-statistic: 55.72 on 5 and 118 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{exp}\NormalTok{(}\KeywordTok{coef}\NormalTok{(lmodl)[}\DecValTok{3}\OperatorTok{:}\DecValTok{6}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  activityone  activitylow activitymany activityhigh 
+##    1.0531064    0.8834971    1.0918894    0.6575384
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lmodh <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(thorax }\OperatorTok{~}\StringTok{ }\NormalTok{activity, fruitfly)}
+\KeywordTok{anova}\NormalTok{(lmodh)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Variance Table
+## 
+## Response: thorax
+##            Df  Sum Sq  Mean Sq F value Pr(>F)
+## activity    4 0.02555 0.006388  1.1092 0.3555
+## Residuals 119 0.68532 0.005759
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lmodu <-}\StringTok{ }\KeywordTok{lm}\NormalTok{(}\KeywordTok{log}\NormalTok{(longevity) }\OperatorTok{~}\StringTok{ }\NormalTok{activity, fruitfly)}
+\KeywordTok{summary}\NormalTok{(lmodu)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = log(longevity) ~ activity, data = fruitfly)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -0.95531 -0.13187  0.03108  0.19814  0.49222 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   4.11935    0.05644  72.986  < 2e-16 ***
+## activityone   0.02344    0.07982   0.294    0.770    
+## activitylow  -0.11951    0.07982  -1.497    0.137    
+## activitymany  0.02396    0.08065   0.297    0.767    
+## activityhigh -0.51722    0.07982  -6.480 2.17e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.2822 on 119 degrees of freedom
+## Multiple R-squared:  0.3594, Adjusted R-squared:  0.3378 
+## F-statistic: 16.69 on 4 and 119 DF,  p-value: 6.963e-11
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#different coding}
+\KeywordTok{contr.treatment}\NormalTok{(}\DecValTok{4}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   2 3 4
+## 1 0 0 0
+## 2 1 0 0
+## 3 0 1 0
+## 4 0 0 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{contr.helmert}\NormalTok{(}\DecValTok{4}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   [,1] [,2] [,3]
+## 1   -1   -1   -1
+## 2    1   -1   -1
+## 3    0    2   -1
+## 4    0    0    3
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{contr.sum}\NormalTok{(}\DecValTok{4}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   [,1] [,2] [,3]
+## 1    1    0    0
+## 2    0    1    0
+## 3    0    0    1
+## 4   -1   -1   -1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{data}\NormalTok{(sexab,}\DataTypeTok{package=}\StringTok{"faraway"}\NormalTok{)}
+\CommentTok{#help(sexab,package="faraway")}
+\KeywordTok{contrasts}\NormalTok{(sexab}\OperatorTok{$}\NormalTok{csa) <-}\StringTok{ }\KeywordTok{contr.sum}\NormalTok{(}\DecValTok{2}\NormalTok{)}
+\KeywordTok{summary}\NormalTok{(}\KeywordTok{lm}\NormalTok{(ptsd }\OperatorTok{~}\StringTok{ }\NormalTok{csa, sexab))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = ptsd ~ csa, data = sexab)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -8.0451 -2.3123  0.0951  2.1645  7.0514 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   8.3185     0.4053  20.526  < 2e-16 ***
+## csa1          3.6226     0.4053   8.939 2.17e-13 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 3.473 on 74 degrees of freedom
+## Multiple R-squared:  0.5192, Adjusted R-squared:  0.5127 
+## F-statistic:  79.9 on 1 and 74 DF,  p-value: 2.172e-13
+\end{verbatim}
+
+\end{document}

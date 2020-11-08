@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+
+##Interactions 
+
+A homeowner in England recorded his weekly natural gas consumption, in thousands of cubic feet, during two winter heating seasons. For the second season, cavity wall insulation had been installed. 
+
+The homeowner also recorded the average weekly temperature in degrees Celsius because this would also affect gas consumption. The data may be found in the MASS package
+
+
+```{r}
+data(whiteside,package="MASS")
+require(ggplot2)
+ggplot(aes(x=Temp,y=Gas),data=whiteside)+geom_point()+facet_grid(~ Insul)+geom_smooth(method="lm")
+```
+
+We can see that less gas is used after the insulation is installed but the difference varies by temperature. The relationships appear linear so we fit a model:
+
+
+```{r}
+lmod <- lm(Gas ~ Temp*Insul, whiteside)
+summary(lmod)
+```
+
+We would predict that the gas consumption would fall by 0.393 for each 1°C increase in temperature before insulation. After insulation, the fall in consumption per degree is only 0.393 - 0.115 = 0.278. But the interpretation for the other two parameter estimates is more problematic since these represent predicted consumption when the temperature is zero. This is on the lower edge of the observed range of temperatures and would not represent a typical difference. For other datasets, a continuous predictor value of zero might be far outside the range and so these parameters would have little practical meaning.The solution is to center the temperature predictor by its mean value and recompute the linear model:
+
+```{r}
+mean(whiteside$Temp)
+whiteside$ctemp <- whiteside$Temp - mean(whiteside$Temp)
+lmodc <- lm(Gas ~ ctemp*Insul, whiteside)
+summary(lmodc)
+```
+Now we can say that the average consumption before insulation at the average temperature was 4.94 and 4.94 - 1.57 = 3.37 afterwards. The other two coefficients are unchanged and their interpretation remains the same. Thus we can see that centering allows a more natural interpretation of the parameter estimates in the presence of interaction.
+
+##Factors With More Than Two Levels
+
+With multiple levels, it can be hard to distinguish the groups. Sometimes it is better to plot each level separately. This can be achieved nicely with the help of the ggplot2 package:
+
+```{r}
+data(fruitfly,package="faraway")
+plot(longevity ~ thorax, fruitfly, pch=unclass(activity))
+legend(0.63,100,levels(fruitfly$activity),pch=1:5)
+require(ggplot2)
+ggplot(aes(x=thorax,y=longevity),data=fruitfly) + geom_point() + facet_wrap( ~ activity)
+lmod <- lm(longevity ~ thorax*activity, fruitfly)
+summary(lmod)
+#model.matrix(lmod)
+par(mfrow=c(2,2))
+plot(lmod)
+anova(lmod)
+par(mfrow=c(1,1))
+```
+The plot makes it clearer that longevity for the high activity group is lower.
+Since “isolated” is the reference level, the fitted regression line within this group  is longevity= -50.2 + 136.1*thorax. For “many,” it is longevity= (-50.2 -1.1) + (136.1 + 6.5)*thorax. Similar calculations can be made for the other groups. 
+
+```{r}
+head(model.matrix(lmod))
+```
+
+There is perhaps some heteroscedasticity, but we will let this be until later for ease of presentation. Now we see whether the model can be simplified. The model summary output is not suitable for this purpose because there are four t-tests corresponding to the interaction term while we want just a single test for this term.
+```{r}
+anova(lmod)
+```
+
+This is a sequential analysis of variance (ANOVA) table. Starting from a null model, terms are added and sequentially tested.  The interaction term thorax:activity is not significant, indicating that we can fit the same slope within each group. No further simplification is possible.
+
+We notice that the F-statistic for the test of the interaction term is very small and its p-value close to one. For these data, the fitted regression lines to the five groups happen to be very close to parallel. This can, of course, just happen by chance. In some other cases, unusually large p-values have been used as evidence that data have been tampered with or “cleaned” to improve the fit.
+
+```{r}
+lmodp <- lm(longevity ~ thorax+activity, fruitfly)
+drop1(lmodp,test="F")
+summary(lmodp)
+```
+
+Returning to the diagnostics: A log transformation can remove the heteroscedasticity:
+```{r}
+plot(residuals(lmodp) ~fitted(lmodp),pch=unclass(fruitfly$activity),xlab="Fitted",ylab="Residuals")
+abline(h=0)
+lmodl <- lm(log(longevity) ~ thorax+activity, fruitfly)
+plot(residuals(lmodl) ~ fitted(lmodl),pch=unclass(fruitfly$activity), xlab="Fitted",ylab="Residuals")
+abline(h=0)
+summary(lmodl)
+exp(coef(lmodl)[3:6])
+lmodh <- lm(thorax ~ activity, fruitfly)
+anova(lmodh)
+lmodu <- lm(log(longevity) ~ activity, fruitfly)
+summary(lmodu)
+#different coding
+contr.treatment(4)
+contr.helmert(4)
+contr.sum(4)
+data(sexab,package="faraway")
+#help(sexab,package="faraway")
+contrasts(sexab$csa) <- contr.sum(2)
+summary(lm(ptsd ~ csa, sexab))
+```
+

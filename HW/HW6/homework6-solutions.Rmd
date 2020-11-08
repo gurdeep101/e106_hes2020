@@ -1,0 +1,305 @@
+---
+title: "Homework6-solutions"
+author: "Hakan Gogtas"
+date: "11/6/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+install.packages("knitr")
+install.packages("markdown")
+library(knitr)
+library(markdown)
+```
+
+## R Markdown
+### Due Date: November 3, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Solutions:
+
+## Problem 1
+
+Refer to Commercial properties data set. A commercial real estate company evaluates vacancy rates, square footage, rental rates, and operating expenses for commercial properties in a large metropolitan area in order to provide clients with quantitative information upon which to make rental decisions.The variables in the data set are the age ($X_1$), operating expenses and taxes ($X_2$), vacancy rates ($X_3$), total square footage ($X_4$),and rental rates (Y). (35 points, 5 points each)
+
+a-) Obtain the scatter plot matrix and the correlation matrix. Interpret these and state your principal findings.
+
+$X_4$ is the variable that is strongly more correlated with Y than other variables. The correlation coefficient is 0.54. $X_2$ follows $X_4$ wih the correlation coefficent of 0.41. There also indication of some outliers with $X_3$.
+
+```{r}
+install.packages("readr")
+library(readr)
+Commercial_Properties_Data_Set <- read_csv("Commercial Properties Data Set.csv")
+
+CPDS <-data.frame(Commercial_Properties_Data_Set)
+head(CPDS)
+#Use the cor() R function to obtain the correlation matrix and the plot() R function to obtain the scatter plot matrix.  
+round(cor(CPDS ),2)
+par(frow=c(1,1))
+plot(CPDS)
+
+```
+
+
+b-) Fit regression model for four predictor variables to the data. State the estimated regression function.
+
+All variables are significant except $X_3$.$R^2$ is 58%. The estimated regression function is below:
+
+Y= 12.2 - 0.14 $X_1$ + 0.28 $X_2$ + 0.62 $X_3$ + 0.000008 $X_4$
+
+#Use the lm() R function to fit the regression model for the four predictor variables: X1,X2,X3,and X4 to the rental rates response variable, Y.
+#not to display numbers such as 1+e3 (exponent), changing the option
+```{r}
+options("scipen" = 10)
+h<-lm(Y~.,data=CPDS )
+summary(h)
+anova(h)
+```
+
+c-) Obtain the residuals and prepare a box plot of the residuals. Does the distribution appear to be fairly symmetrical? 
+
+Yes, it appears to be fairly symmetrical. However, there are out-liers.
+
+```{r}
+# Use the boxplot () R function to prepare a box plot of the residuals.
+ei<-h$residuals
+boxplot(ei)
+```
+
+
+d-)Conduct the Breusch-Pagan test for constancy of the error variance, assuming log $\sigma_{i}^{2}$=$\gamma_0$+$\gamma_1X_1$+$\gamma_2X_2$+$\gamma_3X_3$+$\gamma_4X_4$ use $\alpha$ = .01. State the alternatives, decision rule, and conclusion.
+
+The Breusch-Pagan test can be modified to allow for different relationships between the error variance and the level of X (Refer to Chapter 3 page #119 of the Michael_H_Kutner,et. al.) As the errors were fairly symmetric we choose not to apply logs to the squared residuals to estimate the variance. If the squared errors looked more disperse we may have decided to use natural log of the residuals instead. If you justified your analysis you will be granted full points here. 
+
+H_{0}:$\gamma_{1}= \gamma_{2} = \gamma_{3}= \gamma_{4}=0$
+H_{a}:At least one $\gamma_{i} \neq 0$
+
+The decision rule is: If p-value > alpha, conclude Ho.Conclusion: The p-value of the test is 0.08258059 > alpha (0.01). Thus, we conclude Ho: error variance is constant. Fail to reject the null; error variances are equal.
+
+```{r}
+ei2<-ei^2
+CPDS[ ,6]<-ei2
+dimnames(CPDS)[[2]][6]<-"ei2"
+h2<-lm(ei2~X1+X2+X3+X4,data=CPDS)
+summary(h2)
+d<-anova(h2)
+#Under H_0 the test statistic of the Breusch-Pagan test follows a chi-squared distribution with parameter (the number of regressors without the constant in the model) degrees of freedom (here is 4). Note that here we chose not to transform the squared residuals by taking logs.
+SSR=  sum(d$`Sum Sq`[1:4])
+SSE=  98.231
+Chi.Square=(SSR/4)/((SSE/81)^2)
+1-pchisq(Chi.Square,4)
+
+```
+#Alternatively you may use BP function.To perform the Breusch-Pagan test, proceed to use the bptest() R function of the lmtest R package.library(lmtest). The null hypothesis of the Breusch-Pagan test is homoscedasticity (= variance does not depend on auxiliary regressors). If the p-value becomes "small", the null hypothesis is rejected. Answer does not change but the exact p-value may differ because of the transformation technique applied to the residuals.
+```{r}
+install.packages("lmtest")
+library(lmtest)
+
+bptest(h)$p.value[["BP"]]>0.01
+
+```
+
+e-) Obtain QQ plot and error vs. fitted values, and comment on the graphs.
+
+QQ plot shows heavy tails. Difficult to detect unequal variances from the residual vs fitted values graph. Heteroscedasticity could be due to the heavy tails. 
+
+```{r}
+#To prepare a normal probability (QQ) plot of the residuals $\epsilon_{i}$, use the **qqnorm()** R function and the **qqline()** R function together.
+par(mfrow=c(1,2))
+stdei<- rstandard(h)
+qqnorm(stdei,ylab="Standardized Residuals",xlab="Normal Scores", main="QQ Plot")
+qqline(stdei,col = "steelblue", lwd = 2)
+#Use the **plot()** R function together with the **abline()** R function as follows to plot the residuals $e_i$ against the fitted values $\hat Y_i$.
+plot(h$fitted.values,h$residuals,xlab="Fitted Values",ylab="Residuals",main="Residuals vs Fitted")
+abline(h=0,col="steelblue",lwd=2)
+```
+
+f-) Estimate $\beta_0$, $\beta_1$, $\beta_2$, $\beta_3$ and $\beta_4$ jointly by the Bonferroni procedure, using a 95 percent family confidence coefficient. Interpret your results.
+
+Please see below, there are 5 coefficents and g=5, note that g is the number of intervals estimate desired.
+```{r}
+#To obtain the Bonferroni joint confidence intervals of $\beta_{0}$, $\beta_{1}$, $\beta_{2}$, $\beta_{3}$, and $\beta_{4}$, use the **confint()** R function for a 95 percent family confidence coefficient.
+confint(h,level=1-0.05/5)
+```
+
+g-) $X_1$=5, $X_2$=8.25, $X_3$=0 and $X_4$=250000, calculate the predicted rental rate and 95% confidence interval
+Please see below.
+```{r}
+predict(h,data.frame(X1=5,X2=8.25,X3=0,X4=250000),level=0.95, interval = "confidence")
+```
+
+## Problem 2
+Refer to the CDI data set. You have been asked to evaluate two alternative
+models for predicting the number of active ve physicians (Y) in a CDI. Proposed model I includes as predictor variables total population ($X_1$), land area ($X_2$), and total personal income ($X_3$). Proposed model II includes as predictor variables population density ($X_1$, total population divided by land area), percent of population greater than 64 years old ($X_2$), and total personal income ($X_3$).(40 points, 10 points each)
+
+a-) Obtain the scatter plot matrix and the correlation matrix for each proposed model. Summarize the information provided.
+
+For the first model, the number of active ve physicians (Y) is highly correlated with both Total.personal.income  and Total.population. Also, Total.personal.income  and Total.population are highly correlated with each other.
+
+For the second model, the number of active ve physicians (Y) is only highly correlated with Total.personal.income. There is no signifincant correlation among Xs. 
+
+```{r}
+CDI <- read_csv("CDI Data.csv")
+CDI<-data.frame(CDI)
+head(CDI)
+Population.density=CDI$Total.population/CDI$Land.area
+CDI[,18]=Population.density
+dimnames(CDI)[[2]][18]<-"Population.density"
+
+
+m.d1<-data.frame(CDI$Number.of.active.physicians,CDI$Total.population,CDI$Land.area,CDI$Total.personal.income)
+m.d2<-data.frame(CDI$Number.of.active.physicians,CDI$Population.density,CDI$Percent.of.population.65.or.older,CDI$Total.personal.income)
+
+round(cor(m.d1),2)
+round(cor(m.d2),2)
+
+```
+
+
+b-) For each proposed model, fit the first-order regression model  with three predictor variables.
+
+Please see below for the first model all variables are significant and $R^2$ is 90%. For the second model $X_2$ is not significant and $R^2$ is 91%.
+```{r}
+m1<-lm(Number.of.active.physicians~Total.population+Land.area+Total.personal.income,data=CDI)
+m1s<-summary(m1)
+m2<-lm(Number.of.active.physicians~Population.density+Percent.of.population.65.or.older+Total.personal.income,data=CDI)
+m2s<-summary(m2)
+```
+
+c-) Calculate $R^2$ for each model. Is one model clearly preferable in terms of this measure? 
+```{r}
+r1=min(summary(m1s$adj.r.squared[1]))
+r2=min(summary(m2s$adj.r.squared[1]))
+cbind(r1,r2)
+
+```
+See above, no one is clearly preferable, $R^2$ are close to each other.
+
+d-) For each model, obtain the residuals and plot them against $\hat{Y}$, each of the three predictor variables. Also prepare a normal probability plot for each of the two fitted models. Interpret your plots and state your findings. Is one model clearly preferable in terms of appropriateness?
+
+By inspecting of the QQ plots, Model II is a better choice. Less heavy tails than on Model II (aka. the range at the top right hand corner is less peaked). 
+
+```{r}
+par(mfrow=c(2,2))
+stdei<- rstandard(m1)
+qqnorm(stdei,ylab="Standardized Residuals",xlab="Normal Scores", main="Model I:QQ Plot")
+qqline(stdei,col = "steelblue", lwd = 2)
+plot(m1$fitted.values,m1$residuals,xlab="Fitted Values",ylab="Residuals",main="Model I:Residuals vs Fitted")
+
+stdei<- rstandard(m2)
+qqnorm(stdei,ylab="Standardized Residuals",xlab="Normal Scores", main="Model II:QQ Plot")
+qqline(stdei,col = "steelblue", lwd = 2)
+plot(m2$fitted.values,m2$residuals,xlab="Fitted Values",ylab="Residuals",main="Model II:Residuals vs Fitted")
+
+```
+
+
+## Problem 3
+
+Refer to Grocery retailer data set.A large, national grocery retailer tracks productivity and costs of its facilities closely.  Each data point for each variable represents one week of activity. The variables included are the number of cases shipped ($X_1$),the indirect costs of the total labor hours as a percentage ($X_2$), a qualitative predictor called holiday that is coded 1 if the week has a holiday and 0 otherwise ($X_3$), and the total labor hours (Y). (25 points, 5 points each)
+
+a-) Fit regression model to the data for three predictor variables. State the estimated regression function. How are $b_1$, $b_2$ , and $b_3$ interpreted here? (5 points)
+
+There is a strong correlation between X3 and Y. As it can be seen from the boxplot, Y has two separate ranges (or distributions) for X3=1 and X3=0. X1 and X3 are significant.$R^2$ is 68%. The estimated regression function is below:
+
+Y= 4149.88 + 0.00078 $X_1$ - 13.17 $X_2$ + 623.55 $X_3$
+
+Changing X3=0 to X3=1 will increase the total hours by 623.55 by holding all the variables are constant. You can make the similar explanations for other variables.
+```{r}
+library(readr)
+Grocery_Retailer_Data_Set <- read_csv("Grocery Retailer Data Set.csv")
+GRDS <- data.frame(Grocery_Retailer_Data_Set)
+head(GRDS)
+round(cor(GRDS),2)
+plot(GRDS)
+
+#install.packages("plyr") # This package is useful as a data manipulator 
+#install.packages("ggplot2") #This package is useful for visualizing data
+library(plyr)    
+library(ggplot2) 
+#you need to define X3 as a factor to see the side by side boxplot
+ggplot(GRDS, aes(x = factor(X3), y = Y)) + geom_boxplot() 
+#alternatively you can use the code below as well for the boxplot
+boxplot(GRDS$Y~factor(GRDS$X3))
+#not to display numbers such as 1+e3 (exponent), changing the option
+options("scipen" = 10)
+f1<-lm(Y~.,data=GRDS)
+summary(f1)
+anova(f1)
+```
+
+b-)Prepare a time plot of the residuals. Is there any indication of that the error terms are correlated?
+
+No indication or correlation. However, there could be a pattern such as every 4 points, the movement is replicating it self. It needs to be investigated further.
+```{r}
+ei<-f1$residuals
+n<-seq(1:length(ei))
+par(mfrow=c(1,1))
+plot(n,ei,type="l")
+```
+
+c-) Obtain the analysis of variance table that decomposes the regression sum of squares into extra sums of squares associated with $X_1$; with $X_3$ , given $X_1$; and with $X_2$ , given $X_1$, and $X_3$. 
+
+see below:
+
+S($X_1$) = 136366 
+S($X_3$/$X_1$)= 2033565
+S($X_2$/$X_1$,$X_3$)= 6675
+```{r}
+#order need to be kept
+fz<-lm(Y~X1+X3+X2,data=GRDS)
+summary(fz)
+anova(fz)
+
+```
+
+
+d-) Test whether $X_2$ can be dropped from the regression model given that $X_1$, and $X_3$ are retained. Use the F* test statistic and $\alpha$ = .05. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+
+Ho: $\beta_2$ = 0
+Ha: $\beta_2 \neq 0$
+
+Pvalue is 0.57, Accept null. $X_2$ can be dropped from the model.
+
+```{r}
+fr<-lm(Y~X1+X3,data=GRDS)
+anova(fr,f1)
+```
+
+e-) Does SSR($X_1$)+SSR($X_2$/$X_1$) equal SSR($X_2$)+SSR($X_1$/$X_2$) here? Must this always be the case? (5 points)
+
+#order in lm fuction
+x2+x1
+
+Yes, always must be equal as it shows the total SSR when both $X_1$ and $X_2$ are in the model.
+
+from the part c:
+SSR($X_1$) =  136366 
+SSR($X_2$/$X_1$)= 5726
+SSR($X_1$)+ SSR($X_2$/$X_1$) =136366 + 5726=142092
+from the r code below:
+SSR($X_2$) =  11395
+SSR($X_1$/$X_2$)= 130697
+SSR($X_2$) + SSR($X_1$/$X_2$)=11395+130697=142092
+```{r}
+fk<-lm(Y~X1+X2,data=GRDS)
+anova(fk)
+a=136366 + 5726
+f22<-lm(Y~X2+X1,data=GRDS)
+anova(f22)
+b=11395+130697
+
+cbind(a,b)
+
+```
+

@@ -1,0 +1,389 @@
+
+---
+title: 'CSCI E-106:Assignment 6'
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: November 3, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+## Problem 1
+
+Refer to Commercial properties data set. A commercial real estate company evaluates vacancy rates, square footage, rental rates, and operating expenses for commercial properties in a large metropolitan area in order to provide clients with quantitative information upon which to make rental decisions.The variables in the data set are the age ($X_1$), operating expenses and taxes ($X_2$), vacancy rates ($X_3$), total square footage ($X_4$),and rental rates (Y). (35 points, 5 points each)
+
+
+a-) Obtain the scatter plot matrix and the correlation matrix. Interpret these and state your
+principal findings.
+
+```{r}
+# libraray read in
+rm(list = ls())
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW6") # change to local path
+
+library(knitr)
+library(onewaytests)
+library(olsrr)
+library(lmtest)
+library(MASS)
+library(ALSM)
+
+# load data and check
+prop <- read.csv('Commercial Properties Data Set.csv')
+colnames(prop)
+head(prop)
+colnames(prop) <- c('rental','age','opex','vac_rate','area')
+head(prop)
+
+str(prop)
+summary(prop)
+
+# create plots & correlation matrices
+corr_scat_func <- function(dfname) {
+  print(round(cor(dfname),3))
+  plot(dfname)
+}
+
+corr_scat_func(prop)
+```
+
+From the correlation plot we see that 
+
+1. Property age is negatively correlated with rental yield; we would expect older properties to be more run-down and be less attractive. 
+2. Vacancy rate has low correlation
+3. Opex and Area have moderate correlation; 0.414 and 0.535 respectively ith rental
+4. We also see that none of the variables have a high correlation with each other; this means we can hope to avoid multicollinearity.
+
+b-) Fit regression model for four predictor variables to the data. State the estimated
+regression function.
+
+```{r}
+reg1b <- lm(rental~., data = prop)
+summary(reg1b)
+ei_1b <- reg1b$residuals
+```
+
+The regression function is stated as 
+
+rental = 1.22e+01 - 1.42e-01 * age + 2.82e-01 * opex + 6.19e-01 * vac_rate + 7.924e-06 * area
+
+c-) Obtain the residuals and prepare a box plot of the residuals. Does the distribution appear to be fairly symmetrical?  
+
+```{r}
+ei_1b[1:10] # printing 1st 10 variables
+
+# plots
+newer.par = par(mfrow = c(1,1))
+boxplot(ei_1b, horizontal = TRUE, staplewax = 0.5, col = 3, xlab = 'Residual')
+hist(ei_1b, main = 'Histogram of Residuals')
+newer.par
+```
+
+From the plots above we see that the residuals appear to be slightly skewed to the right.
+
+d-)Conduct the Breusch-Pagan test for constancy of the elTor varhmce, assuming log $\sigma_{i}^{2}$=$\gamma_0$+$\gamma_1X_1$+$\gamma_2X_2$+$\gamma_3X_3$+$\gamma_4X_4$ use $\alpha$ = .01. State the alternatives, decision rule, and conclusion
+
+```{r}
+# BP Test
+bptest(reg1b)
+# Ho : Errors are normally distributed; no heteroskedasticicty
+# Ha : Errors are not normally distributed
+
+# Decision Rule: p-value > 0.01 ==> Accept Ho
+```
+
+The p-value from the BP Test = 0.01139 which is greater than 0.01 threshold value. Hence, we accept Ho and conclude that heteroskedasticity is not present. 
+
+e-) Obtain QQ plot and error vs. fitted values, and comment on the graphs.
+
+```{r}
+newer.par = par(mfrow = c(2,2))
+plot(reg1b)
+newer.par
+```
+
+The residuals vs fitted plot shows a fairly random pattern. The QQ plot line is close to 45 degrees up to + / - 1 SD. 
+
+This shows us that the following regression assumptions are satisfied
+
+    Linearity of the regression function
+    Error terms have constant variance
+    Error terms are normally distributed
+    Error terms are independent
+
+f-) Estimate $\beta_0$, $\beta_1$, $\beta_2$, $\beta_3$ and $\beta_4$ jointly by the Bonferroni procedure, using a 95 percent family confidence coefficient. Interpret your results.
+
+```{r}
+confint(reg1b, level = 1-0.05/4)
+```
+
+This means that when repeated samples are taken we would expect all the values to lie within the above range 95% of the time.
+
+g-) $X_1$=5, $X_2$=8.25, $X_3$=0 and $X_4$=250000, calculate the predicted rental rate and 95% confidence interval
+
+```{r}
+newdata = data.frame(age = 5, opex = 8.25, vac_rate = 0, area = 250000)
+predict.lm(reg1b, newdata, level = 1-0.05/4, interval = 'confidence') 
+
+```
+
+## Problem 2
+Refer to the CDI data set. You have been asked to evaluate two alternative
+models for predicting the number of active ve physicians (Y) in a CDI. Proposed model I includes
+as predictor variables total population ($X_1$), land area ($X_2$), and total personal income ($X_3$). Proposed model II includes as predictor variables population density ($X_1$, total population divided by land area), percent of population greater than 64 years old ($X_2$), and total personal income ($X_3$).(40 points, 10 points each)
+
+a-) Obtain the scatter plot matrix and the correlation matrix for each proposed model. Summarize
+the information provided.
+
+```{r}
+# load data and check
+cdi <- read.csv('CDI Data.csv')
+colnames(cdi)
+head(cdi)
+
+# create df for proposed model 1
+cols_cdi1 <- c('Number.of.active.physicians', 'Total.population', 'Land.area', 'Total.personal.income')
+
+cdi_reg1 <- cdi[cols_cdi1]
+dim(cdi_reg1)
+colnames(cdi_reg1) <- c('Y', 'X1','X2','X3')
+head(cdi_reg1)
+
+# add new column
+cdi$population.density <- cdi$Total.population/cdi$Land.area
+
+# create df for proposed model 2
+cols_cdi2 <- c('Number.of.active.physicians', 'population.density', 'Percent.of.population.65.or.older', 'Total.personal.income')
+
+cdi_reg2 <- cdi[cols_cdi2]
+dim(cdi_reg2)
+colnames(cdi_reg2) <- c('Y', 'X1','X2','X3')
+head(cdi_reg2)
+
+# correlation values and scatter plots
+corr_scat_func(cdi_reg1)
+corr_scat_func(cdi_reg2)
+
+```
+From the scatter plot and correlation matrix for proposed model 1 we see that 
+1. X1 and X3 have linear relations though outliers are present
+2. Correlation for X1 & X3 with Y are similar 0.94 (X1) vs 0.948 (X2)
+3. X1 and X3 have very high correlation with each other 0.987; which needs to be monitored for adverse effects on the regression models
+4. X2 has low correlation with all other variables; we may need to transform X2 for regression.
+
+From the scatter plot and correlation matrix for proposed model 2 we see that 
+1. X1 has some correlation with Y but we may need further tranformation
+2. X2 has slight negative correlation with Y (-0.003); effectively close to zero
+3. X3 has linear relationship with Y and correlation of 0.948
+4. X1 and X3 have slight correlation 0.32 with each other.
+
+b-) For each proposed model, fit the first-order regression model  with three predictor
+variables.
+
+```{r}
+# proposed model 1
+reg2b1 <- lm(Y~., data = cdi_reg1)
+summary(reg2b1)
+ei_2b1 <- reg2b1$residuals
+
+# proposed model 2
+reg2b2 <- lm(Y~., data = cdi_reg2)
+summary(reg2b2)
+ei_2b2 <- reg2b2$residuals
+```
+
+As seen from fitted models above, the proposed model 1 has 
+
+R2 of 0.9026; Adj R2 of 0.902; F stat of 1347
+
+while proposed model 2 has 
+
+R2 of 0.9117; Adj R2 of 0.9111; F stat of 1501
+
+c-) Calculate $R^2$ for each model. Is one model clearly preferable in terms of this measure?
+
+```{r}
+summary(reg2b1)$r.squared
+summary(reg2b1)$adj.r.squared
+
+summary(reg2b2)$r.squared
+summary(reg2b2)$adj.r.squared
+```
+
+Proposed model 2 has adjusted R2 that is higher than model 1 by 0.0091686. It would be difficult to choose between the 2 purely on this basis.
+
+d-) For each model, obtain the residuals and plot them against $\hat{Y}$, each of the three predictor variables. Also prepare a normal probability plot for each of the two fitted models. Interpret your plots and state your findings. Is one model clearly preferable in terms of appropriateness?
+
+```{r}
+old.par <- par(mfrow = c(2,2))
+plot(ei_2b1,reg2b1$fitted.values, xlab = 'Residuals', ylab = 'Fitted values', main = 'Residuals vs Fitted values')
+plot(ei_2b1,cdi_reg1$X1, xlab = 'Residuals', ylab = 'X1', main = 'Model 1 Residuals vs X1')
+plot(ei_2b1,cdi_reg1$X2, xlab = 'Residuals', ylab = 'X2', main = 'Model 1 Residuals vs X2')
+plot(ei_2b1,cdi_reg1$X3, xlab = 'Residuals', ylab = 'X3', main = 'Model 1 Residuals vs X3')
+old.par
+
+reg2b1_stdres = rstandard(reg2b1)
+qqnorm(reg2b1_stdres,ylab="Standardized Residuals",xlab="Normal Scores",main="Proposed Model 1") 
+qqline(reg2b1_stdres)
+
+old.par <- par(mfrow = c(2,2))
+plot(ei_2b1,reg2b2$fitted.values, xlab = 'Residuals', ylab = 'Fitted values', main = 'Residuals vs Fitted values')
+plot(ei_2b1,cdi_reg2$X1, xlab = 'Residuals', ylab = 'X1', main = 'Model 2 Residuals vs X1')
+plot(ei_2b1,cdi_reg2$X2, xlab = 'Residuals', ylab = 'X2', main = 'Model 2 Residuals vs X2')
+plot(ei_2b1,cdi_reg2$X3, xlab = 'Residuals', ylab = 'X3', main = 'Model 2 Residuals vs X3')
+old.par
+
+reg2b2_stdres = rstandard(reg2b2)
+qqnorm(reg2b2_stdres,ylab="Standardized Residuals",xlab="Normal Scores",main="Proposed Model 2") 
+qqline(reg2b2_stdres)
+
+```
+
+we see similar results for both plots. The residuals vs fitted values and residuals vs X1, X2, X3 plots all have patterns and outliers and hence do not meet any of the linear regression assumptions of linearity, normality, constant variance, independence or outliers.
+
+## Problem 3
+
+Refer to Grocery retailer data set.A large, national grocery retailer tracks productivity and costs of its facilities closely.  Each data point for each variable represents one week of activity. The variables included are the number of cases shipped ($X_1$),the indirect costs of the total labor hours as a percentage ($X_2$), a qualitative predictor called holiday that is coded 1 if the week has a holiday and 0 otherwise ($X_3$), and the total labor hours (Y). (25 points, 5 points each)
+
+a-) Fit regression model to the data for three predictor variables. State the estimated
+regression function. How are $b_1$, $b_2$ , and $b_3$ interpreted here? (5 points)
+
+```{r}
+veg <- read.csv('Grocery Retailer Data Set.csv')
+dim(veg)
+head(veg)
+
+reg3a <- lm(Y~., data = veg)
+summary(reg3a)
+ei_3a <- reg3a$res
+```
+
+The regression function is stated as below
+
+Y = 4.15e+03 + 7.871e-04 * X1 - 1.317e+01 * X2 + 6.236e+02 * X3
+
+total labor hours = 4.15e+03 + 7.871e-04 * (num of cases shipped) - 1.317e+01 * (total labor hrs as percent) + 6.236e+02 * (holiday in week or not)
+
+The coefficients are interpreted as the unit change in total labor hours for unit change in the associated predictor variable holding all other predictor variables constant.
+
+b-)Prepare a time plot of the residuals. Is there any indication of that the error terms are correlated?
+
+```{r}
+plot(sequence(nrow(veg)), ei_3a, xlab = 'Week', ylab = 'Residuals', main = 'Time plot of Residuals')
+
+```
+
+From the plot above we see that the residuals are randomly distributed and hence uncorrelated.
+
+c-) Obtain the analysis of variance table that decomposes the regression sum of squares into
+extra sums of squares associated with $X_1$; with $X_3$ , given $X_1$; and with $X_2$ , given $X_1$, and $X_3$. 
+
+ANOVA tables are calculated as below
+
+```{r}
+# Anova with X1
+f1 <- lm(Y~X1, data = veg)
+a1 <- anova(f1)
+a1
+
+ssr_a1 <- a1$`Sum Sq`[1]
+ssr_a1
+
+# Anova with X3 given X1
+f13 <- lm(Y~X1+X3, data = veg)
+a13 <- anova(f13)
+a13
+
+ssr_a13 <- sum(a13$`Sum Sq`[1:2])
+ssr_a13
+
+# Marginal effect of X3 given X1; SSR(X3/X1)
+ssr_a13-ssr_a1
+
+# Anova with X2 and with X2 given X1 & X3
+f2 <- lm(Y~X2, data = veg)
+a2 <- anova(f2)
+a2
+ssr_a2 <- a2$`Sum Sq`[1]
+ssr_a2
+
+f2_13 <- lm(Y~X2 + X1 + X3, data = veg)
+a2_13 <- anova(f2_13)
+a2_13
+
+ssr_a2_13 <- sum(a2_13$`Sum Sq`[1:3])
+ssr_a2_13
+
+# Marginal effect with X2 given X1 and X3; SSR(X2/X1,X3)
+ssr_a2_13-ssr_a2
+
+```
+
+ANOVA tables, decomposition and marginal effect are calculated above. In both cases we see a fairly high positive change in the marginal effect.
+
+d-) Test whether $X_2$ can be dropped from the regression model given that $X_1$, and $X_3$ are retained. Use the F* test statistic and $\alpha$ = .05. State the alternatives, decision rule, and conclusion. What is the P-value of the test?
+
+```{r}
+# plot full model, reduced model and compare using anova
+
+f13 <- lm(Y~X1+X3, data = veg) # reduced model
+f13_2 <- lm(Y~X1+X3+X2, data = veg) # full model
+
+anova(f13_2, f13) # full model, reduced model
+
+```
+
+We see from above that removing X2 causes the residual Sum of squares to be decreased by 6674.6 units. 
+
+Ho : X2 = 0; adding X2 has no effect and it can be dropped
+Ha : X2 != 0; adding X2 has effect and it should be added to the model.
+
+p-value of F test = 0.5712 which is > 0.05; hence we reject Ho and conclude that X2 should be retain  ed
+
+e-) Does SSR($X_1$)+SSR($X_2$/$X_1$) equal SSR($X_2$)+SSR($X_1$/$X_2$) here? Must this always be the case? (5 points)
+
+```{r}
+# X1 as reduced model
+fa_1 <- lm(Y~X1, data = veg)
+anova(fa_1)
+ssr_x1 <- anova(fa_1)[1,2]
+ssr_x1
+
+fa_1_2 <- lm(Y~X1+X2, data = veg)
+anova(fa_1_2)
+ssr_x1_x2 <- anova(fa_1_2)[2,2]
+ssr_x1_x2
+
+option_a_total <- ssr_x1 + ssr_x1_x2
+option_a_total
+
+# X2 as reduced model
+fa_2 <- lm(Y~X2, data = veg)
+anova(fa_2)
+ssr_x2 <- anova(fa_2)[1,2]
+ssr_x2
+
+fa_2_1 <- lm(Y~X2+X1, data = veg)
+anova(fa_2_1)
+ssr_x2_x1 <- anova(fa_2_1)[2,2]
+ssr_x2_x1
+
+option_b_total <- ssr_x2 + ssr_x2_x1
+option_b_total
+
+```
+
+As seen above, both totals are the same. This may not always be the same since, in some cases X2 when fitted 1st may have greater or lesser explanatory power and will fit a different amount. Adding X1 after adding X2 will mean that X1 is fitted only on the unexplained errors after fitting X2.

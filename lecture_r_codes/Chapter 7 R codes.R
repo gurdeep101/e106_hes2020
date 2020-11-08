@@ -36,6 +36,7 @@ anova(f23)
 
 # extract SSR values
 sc <- anova(f23)
+sc
 sc$`Sum Sq`
 
 anova(f21)[1,2]
@@ -64,12 +65,24 @@ fitres$r.squared
 #Dwaine Studios Example
 #standartized regreesion
 library(QuantPsyc)
-CH07TA05 <- read.csv("/cloud/project/Fall 2020/CH07TA05.csv")
+CH07TA05 <- read.csv("DwaineStudio.csv")
 fit<-lm(Y~X1+X2,data=CH07TA05)
 summary(fit)
 lm.beta(fit)
 
-#Crew Productivty Example
+f0<-lm(Y~X1+X2,data=CH07TA05)
+f1<-lm(Y~X1,data=CH07TA05)
+f2<-lm(Y~X2,data=CH07TA05)
+
+anova(f0)
+anova(f1)
+anova(f2)
+
+# Get SSTO
+ssto_dw <- var(CH07TA05$Y)*(nrow(CH07TA05)-1)
+ssto_dw
+
+#Crew Productivity Example
 CrewProductivity<- read.csv("CrewProductivity.csv")
 cor(CrewProductivity)
 
