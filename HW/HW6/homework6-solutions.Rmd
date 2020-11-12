@@ -84,7 +84,7 @@ The Breusch-Pagan test can be modified to allow for different relationships betw
 H_{0}:$\gamma_{1}= \gamma_{2} = \gamma_{3}= \gamma_{4}=0$
 H_{a}:At least one $\gamma_{i} \neq 0$
 
-The decision rule is: If p-value > alpha, conclude Ho.Conclusion: The p-value of the test is 0.08258059 > alpha (0.01). Thus, we conclude Ho: error variance is constant. Fail to reject the null; error variances are equal.
+The decision rule is: If p-value > alpha, conclude Ho.Conclusion: The p-value of the test is 0.04 > alpha (0.01). Thus, we conclude Ho: error variance is constant. Fail to reject the null; error variances are equal.
 
 ```{r}
 ei2<-ei^2
@@ -97,7 +97,7 @@ d<-anova(h2)
 SSR=  sum(d$`Sum Sq`[1:4])
 SSE=  98.231
 Chi.Square=(SSR/4)/((SSE/81)^2)
-1-pchisq(Chi.Square,4)
+1-pchisq(Chi.Square,3)
 
 ```
 #Alternatively you may use BP function.To perform the Breusch-Pagan test, proceed to use the bptest() R function of the lmtest R package.library(lmtest). The null hypothesis of the Breusch-Pagan test is homoscedasticity (= variance does not depend on auxiliary regressors). If the p-value becomes "small", the null hypothesis is rejected. Answer does not change but the exact p-value may differ because of the transformation technique applied to the residuals.
@@ -126,10 +126,10 @@ abline(h=0,col="steelblue",lwd=2)
 
 f-) Estimate $\beta_0$, $\beta_1$, $\beta_2$, $\beta_3$ and $\beta_4$ jointly by the Bonferroni procedure, using a 95 percent family confidence coefficient. Interpret your results.
 
-Please see below, there are 5 coefficents and g=5, note that g is the number of intervals estimate desired.
+Please see below, there are 4 coefficents and g=4, note that g is the number of intervals estimate desired less 1.
 ```{r}
 #To obtain the Bonferroni joint confidence intervals of $\beta_{0}$, $\beta_{1}$, $\beta_{2}$, $\beta_{3}$, and $\beta_{4}$, use the **confint()** R function for a 95 percent family confidence coefficient.
-confint(h,level=1-0.05/5)
+confint(h,level=1-0.05/4)
 ```
 
 g-) $X_1$=5, $X_2$=8.25, $X_3$=0 and $X_4$=250000, calculate the predicted rental rate and 95% confidence interval
