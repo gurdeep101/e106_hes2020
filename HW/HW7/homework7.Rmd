@@ -29,7 +29,8 @@ a-)Plot the wealth as a function of age using a different plotting symbol for th
 ```{r}
 rm(list = ls())
 
-setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW7") # change to local path before running
+# change to local path before running
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW7") 
 
 library(ggplot2)
 library(MASS)
@@ -49,11 +50,15 @@ plot(wealth~age, fortune, pch = unclass(region), main = 'Wealth vs Age')
 
 ```
 
+All values are in a single plot. Even with separate symbols for region it is difficult to make any interpretations.
+
 b-)Plot the wealth as a function of age with a separate panel for each region.
 
 ```{r}
 ggplot(aes(x=age, y = wealth), data = fortune) + geom_point() + facet_wrap(~region)
 ```
+
+Separate plots for each region give a much more clear view.
 
 c-)Determine a transformation on the response to facilitate linear modeling.
 
@@ -97,12 +102,19 @@ newer.par
 
 ```
 
+The SW test has a p-value < 0.05 and hence we conclude that errors are normally distributed
 
+The BP test provides a p-value of 0.1095 and hence we reject Ho and conclude that heteroskedasticity is present.
 
+From the residuals vs fitted values plot we see that the errors are present in groups - possibly on account of regions and hence not random. Outliers are also present
+
+The QQ plot line is not at 45 degrees and points to non-normal distribution.
+
+As seen the results of statistical tests are contradicting the actual plots. We further attempt transformation as indicated by the BoxCox test.
 
 ```{r}
 # Fit transformation using reciprocal as per BoxCox test
-reg1e <- lm(1/wealth~., data = fortune)
+reg1e <- lm((1/wealth)~., data = fortune)
 summary(reg1e)
 
 # Check for assumptions of simple regression model
@@ -124,6 +136,16 @@ plot(reg1e)
 newer.par
 ```
 
+The SW test has a p-value < 0.05 and hence we conclude that errors are normally distributed
+
+The BP test provides a p-value of 0.3104 and hence we reject Ho and conclude that heteroskedasticity is present.
+
+From the residuals vs fitted values plot we see that the errors are now randomly distributed. Outliers are also reduced.
+
+The QQ plot line is at 45 degrees and points to normal distribution.
+
+We now see that all test results are aligned. The R2 & adj R2values are very low and hence, we may need further transformation of X to make this usable for real world scenarios.
+
 ## Problem 2
 
 Refer to the CDI data set. A regression model relating serious crime rate (Y, total serious crimes divided by total population) to population density ($X_1$, total population divided by land area) and unemployment rate ($X_3$) is to be constructed. (30 points, 10 points each)
@@ -141,9 +163,9 @@ crime_rate <- cdi$Total.serious.crimes/cdi$Total.population
 pop_den <- cdi$Total.population/cdi$Land.area
 unemp <- cdi$Percent.unemployment
 
-# fit 1st order model
-reg2a_1 <- lm(y~x1+x2)
-summary(reg2a_1)
+y <- crime_rate
+x1 <- pop_den
+x3 <- unemp
 
 # fit the 2nd order model
 y <- crime_rate
@@ -153,28 +175,49 @@ x11 <- x1^2
 x32 <- x3^2
 x13 <- x1*x3
 
-reg2a_2 <- lm(y~x1+I(x1^2)+x3+I(x3^2)+(x1*x3))
-summary(reg2a_2)
+reg2a <- lm(y~x1+I(x1^2)+x3+I(x3^2)+(x1*x3))
+summary(reg2a)
 
+newer.par = par(mfrow = c(2,2))
+plot(reg2a)
+newer.par
 ```
+The R2 of the model is 0.2485 and adjusted R2 of the model is 0.2398. 
+
+From the residual vs fitted values plot we see that the residuals are not independent and we have outliers in the data while the QQ plot appears to be in order.
 
 b-) Test whether or not all quadratic and interaction terms can be dropped from the regression
 model; use $\alpha$ = .01. State the alternatives, decision rule, and conclusion.
 
 ```{r}
-anova(reg2a_1, reg2a_2)
+# fit 1st order model - reduced model
+reg2b <- lm(y~x1+x3)
+summary(reg2b)
+
+# anova of reduced model and full model
+anova(reg2b, reg2a)
 ```
+
+Comparing the R2 values of full and reduced models we see that the values are nearly similar.
+
+Ho : Quadratic and interaction terms can be dropped
+Ha : Quadratic and interaction terms are needed.
+
+The anova test of the full and reduced models also shows that the incremental addition of sum of squares is very small. 
+
+The p-value = 0.02278 is greater than the alpha = 0.01 and we accept Ho; conclude that the variables can be dropped.
+
 c-) Instead of the predictor variable population density, total population ($X_1$ and land area
 ($X_2$) are to be employed as separate predictor variables, in addition to unemployment rate ($X_3$). The regression model should contain linear and quadratic terms for total population, and linear terms only for land area and unemployment rate. (No interaction terms are to be included in this model.) Fit this regression model and obtain $R^2$. Is this coefficient of multiple determination substantially different from the one for the regression model in part (a)?
 
 ```{r}
 crime_rate <- cdi$Total.serious.crimes/cdi$Total.population
-populaiton <- cdi$Total.population
+population <- cdi$Total.population
 land_area <- cdi$Land.area
 unemp <- cdi$Percent.unemployment
 
 y <- crime_rate
-x1 <- scale(populaiton, scale = FALSE)
+x1 <- scale(population, scale = FALSE)
 x2 <- scale(land_area, scale = FALSE)
 x3 <- scale(unemp, scale = FALSE)
 
@@ -182,7 +225,23 @@ x12 <- x1
 
 reg2c <- lm(y~x1 + I(x1^2)+x2+x3)
 summary(reg2c)
+
+# comparing with part a
+# we assume that 2c is the reduced model since it has quadratic term for x1 and linear terms for others. 
+anova(reg2c, reg2a)
+
 ```
+
+The R2 of the model in part 'c' is 0.1444 with adjusted R2 of 0.1365. 
+
+The R2 of the model in part 'a' is 0.2485 with adjusted R2 of 0.2398. 
+
+Ho : Interaction terms are not needed; 2a and 2c are similar
+Ha : Interaction terms are needed; 2a and 2c are substantially different
+
+The anova test gives us a p-value of 6.46e-14 which means that the result is significant at alpha = 0.001
+
+Hence, we reject Ho conclude that the result in part 'c' is substantially different from that in part 'a'.
 
 ## Problem 3 
 
@@ -197,21 +256,37 @@ confidence interval. Interpret your interval estimate.
 y <- cdi$Number.of.active.physicians
 x1 <- cdi$Total.population
 x2 <- cdi$Total.personal.income
-x3 <- as.numeric(cdi$Geographic.region==1)
-x4 <- as.numeric(cdi$Geographic.region==2)
-x5 <- as.numeric(cdi$Geographic.region==3)
+x3 <- as.numeric(cdi$Geographic.region==1) # NE
+x4 <- as.numeric(cdi$Geographic.region==2) # NC
+x5 <- as.numeric(cdi$Geographic.region==3) # S
 
 reg3a <- lm(y~x1+x2+x3+x4+x5)
 summary(reg3a)
 
+# confidence interval
+confint(reg3a, level = 1-0.1/2)
+
 ```
+
+The model has a very high R2 of 0.9011 and adjusted R2 of 0.8999
+
+x3 and x4 represent the NE and NC regions respectively. As we can see from above, both are significant and have similar intercept and p-values. Confidence intervals for both are also similar. 
+
+Hence, we conclude that both have similar effects. 
 
 b-) Test whether any geographic effects are present; use $\alpha$ = .10. State the alternatives, decision
 rule, and conclusion. What is the P-value of the test?
 
 ```{r}
-reg3b <- lm(y~x1+x+2)
+# reduced model without geographic effects
+reg3b <- lm(y~x1+x2)
 summary(reg3b)
 
+# anova of full and reduced model.
 anova(reg3b, reg3a)
 ```
+
+Ho : geographic variables not needed
+Ha : geographic variables are needed
+
+As seen above the p-vale is 0.121 which is greater than alpha = 0.05. Hence we accept Ho and conclude that geographic variables are not needed.

@@ -1,0 +1,160 @@
+---
+title: "Variable Selection R Codes Examples"
+author: "Hakan Gogtas"
+date: "11/8/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+##Best Subset Regression
+
+Select the subset of predictors that do the best at meeting some well-defined objective criterion, 
+such as having the largest R2 value or the smallest MSE, Mallow’s Cp or AIC.
+
+```{r}
+library(olsrr)
+library(datasets)
+exp <- lm(mpg ~ disp + hp, data = mtcars)
+k <- ols_step_all_possible(exp)
+k
+plot(k)
+k1<-ols_step_best_subset(exp)
+plot(k1)
+```
+
+
+The plot method shows the panel of fit criteria for best subset regression methods.
+
+
+##Stepwise Forward Regression
+
+Build regression model from a set of candidate predictor variables by entering predictors based on p values, in a stepwise manner until there is no variable left to enter any more. The model should include all the candidate predictor variables. If details is set to TRUE, each step is displayed.
+
+
+```{r}
+# stepwise forward regression
+exp2 <- lm(y ~ ., data = surgical)
+k2<-ols_step_forward_p(exp2)
+plot(k2)
+# stepwise forward regression
+ols_step_forward_p(exp2, details = TRUE)
+```
+
+##Stepwise Backward Regression
+
+Build regression model from a set of candidate predictor variables by removing predictors based on p values, in a stepwise manner until there is no variable left to remove any more. The model should include all  the candidate predictor variables. If details is set to TRUE, each step is displayed.
+
+
+```{r}
+
+# stepwise backward regression
+k4<-ols_step_backward_p(exp2)
+k4
+plot(k4)
+#Detailed Output
+# stepwise backward regression
+ols_step_backward_p(exp2, details = TRUE)
+```
+
+##Stepwise Regression
+Build regression model from a set of candidate predictor variables by entering and removing predictors based on p values, in a stepwise manner until there is no variable left to enter or remove any more. The model should include all 
+the candidate predictor variables. If details is set to TRUE, each step is displayed.
+
+```{r}
+
+# stepwise regression
+ols_step_both_p(exp2,pent=0.1,prem=0.05,details=TRUE)
+k5<-ols_step_both_p(exp2)
+k5
+plot(k5)
+#Detailed Output
+ols_step_both_p(exp2, details = TRUE)
+```
+
+##Stepwise AIC Forward Regression
+Build regression model from a set of candidate predictor variables by entering predictors based on Akaike Information Criteria, 
+in a stepwise manner until there is no variable left to enter any more. The model should include all the candidate predictor 
+variables. If details is set to TRUE, each step is displayed.
+
+```{r}
+# stepwise aic forward regression
+k6<-ols_step_forward_aic(exp2)
+k6
+plot(k6)
+ols_step_forward_aic(exp2, details = TRUE)
+```
+
+## Stepwise AIC Backward Regression
+Build regression model from a set of candidate predictor variables by removing predictors based on Akaike Information Criteria,
+in a stepwise manner until there is no variable left to remove any more. The model should include all the candidate predictor variables. If details is set to TRUE, each step is displayed.
+
+
+```{r}
+k7 <- ols_step_backward_aic(exp2)
+k7
+plot(k7)
+ols_step_backward_aic(exp2, details = TRUE)
+```
+
+
+## Stepwise AIC Regression
+Build regression model from a set of candidate predictor variables by entering and removing predictors based on Akaike Information Criteria, 
+in a stepwise manner until there is no variable left to enter or remove any more. The model should include all the candidate predictor variables. 
+If details is set to TRUE, each step is displayed.
+
+
+```{r}
+k8<-ols_step_both_aic(exp2)
+k8
+plot(k8)
+ols_step_both_aic(exp2, details = TRUE)
+```
+
+
+
+```{r}
+state.x77[1:10,]
+state<-data.frame(state.x77)
+require(leaps)
+b<-regsubsets(Life.Exp~.,data=state)
+rs<-summary(b)
+rs$which
+
+AIC<-50*log(rs$rss/50)+(2:8)*2
+plot(AIC~I(1:7),ylab="AIC",xlab="Number of Predictors")
+
+plot(2:8,rs$adjr2,xlab="Number of Predictors",ylab="Adjusted R Square")
+which.max(rs$adjr2)
+
+
+plot(2:8,rs$cp,xlab="Number of Predictors",ylab="Cp")
+abline(0,1)
+```
+
+The competition is between the four-parameter, three-predictor, model including frost, 
+high school graduation and murder and the model also including population. 
+Both models are on or below the Cp = p line, indicating good fits. 
+The choice is between the smaller model and the larger model, which fits a little better. 
+Some even larger models fit in the sense that they are on or below the Cp = p line, but 
+we would not opt for these in the presence of smaller models that fit.
+
+
+
+```{r}
+f<-lm(Life.Exp~.,data=state)
+step(f)
+
+
+f1<-update(f,.~.- Area)
+summary(f1)
+f1<-update(f1,.~.- Illiteracy )
+f1<-update(f1,.~.- Income)
+```
+
+
