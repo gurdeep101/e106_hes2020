@@ -2,15 +2,14 @@
 title: "Variable Selection R Codes Examples"
 author: "Hakan Gogtas"
 date: "11/8/2020"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-
-
 
 ##Best Subset Regression
 
@@ -28,14 +27,11 @@ k1<-ols_step_best_subset(exp)
 plot(k1)
 ```
 
-
 The plot method shows the panel of fit criteria for best subset regression methods.
-
 
 ##Stepwise Forward Regression
 
 Build regression model from a set of candidate predictor variables by entering predictors based on p values, in a stepwise manner until there is no variable left to enter any more. The model should include all the candidate predictor variables. If details is set to TRUE, each step is displayed.
-
 
 ```{r}
 # stepwise forward regression

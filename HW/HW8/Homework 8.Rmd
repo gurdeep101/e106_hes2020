@@ -1,9 +1,9 @@
 ---
 title: 'CSCI E-106:Assignment 8'
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -31,10 +31,63 @@ period. (15 points, 5 points each)
 a-) Second-order regression model is to be fitted for relating number of nurses (Y ) to available facilities and
 services (X).
 
+```{r}
+rm(list = ls())
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW8")
+
+library(olsrr)
+
+# load data and check for NA
+senic <- read.csv('SENIC.csv')
+head(senic)
+str(senic)
+
+y <- senic$Number.of.nurses
+x1 <- senic$Available.facilities.and.services
+
+# fit 1st order model
+reg1a <- lm(y~x1+I(x1^2))
+summary(reg1a)
+
+```
+
 b-) Fit the second-order regression model. Plot the residuals against the fitted values. How well does the second-order model appear to fit the data?
+
+```{r}
+
+# residuals vs fitted plots
+newer.par = par(mfrow = c(2,2))
+plot(reg1a)
+newer.par
+```
+
+From the regression summary above we see that the overall regression has a p-value <2.2e-16 and F-stat of 105.3 and is significant for an R2 of 0.6569. The variable for availabile facilities and services is not significant with p-value > 0.49 while the square term is significant with p-value = 0.00032
+
+The residual vs fitted values plot show divergence for increasing amount of fitted values while the QQ plot line is not at 45 degrees. The standardized residual and theoretical quantities values plot track each other for only +/- 1 SD
+
+This means that following key regression assumptions are not satisfied
+
+1. Linearity of regression function
+2. Error terms have constant variance
+3. Error terms are normally distributed
+4. Error terms are independent
 
 c-) Test whether the quadratic term can be dropped from the regression model; use $\alpha$=0.1,  State the alternatives, decision rule, and conclusion.
 
+```{r}
+# reduced model
+reg1c <- lm(y~x1)
+
+# anova test 
+anova(reg1c, reg1a)
+```
+
+Ho : Quadratic term is not needed. 
+Ha : Quadratic term is needed.
+
+ANOVA test above shows that full model adds 93533 units to the sum of squares and p-value = 0.0003203 which means that the result is significant at 5% level of significance. 
+
+Hence, we reject Ho and conclude that the quadratic term is needed.
 
 ## Problem 2
 
@@ -44,12 +97,114 @@ Implement the following variable selection methods to determine the “best” m
 
 a-) Backward elimination
 
+```{r}
+# load and check for NA
+data(prostate, package = 'faraway')
+head(prostate)
+summary(prostate)
+str(prostate)
+
+set.seed(1023)
+
+# fit full model
+reg2a <- lm(lpsa~., data = prostate)
+summary(reg2a)
+
+# find best model from backward elimination
+prost_backward_step <- ols_step_backward_p(reg2a, prem = 0.05, details = TRUE)
+prost_backward_step
+# create df with names identified in backward step removed
+prost_backward_df <- prostate[,!names(prostate) %in% prost_backward_step$removed]
+head(prost_backward_df)
+str(prost_backward_df)
+summary(prost_backward_df)
+
+# fit the regression model
+reg_prost_backward <- lm(lpsa~., data = prost_backward_df)
+summary(reg_prost_backward)
+```
+
 b-) AIC
+
+```{r}
+# perform best subset selection
+r1 <- ols_step_best_subset(reg2a, details = TRUE)
+r1
+```
+
+Above we have the best subset regression with values for each of the selection methods. We now proceed to choose the model based on the method specified.
+
+```{r}
+# get model number with minimum AIC
+r1$aic
+min_aic <- which.min(r1$aic) 
+min_aic
+
+# df with columns for model with minimum AIC
+# index according to min_aic value, returns string which is split on space to list and unlist the same
+aic_df_cols <- unlist(strsplit(r1$predictors[min_aic], split = ' '))
+aic_df_cols
+prost_aic_df <- prostate[aic_df_cols]
+
+# add response variable and verify structure
+lpsa <- prostate$lpsa
+prost_aic_df <- cbind(lpsa, prost_aic_df)
+str(prost_aic_df)
+
+# run regression with shortlisted columns
+reg_prost_aic <- lm(lpsa~., data = prost_aic_df)
+summary(reg_prost_aic)
+```
 
 c-) Adjusted $R_a^2$
 
+```{r}
+# get model number with max Adj R2
+r1$adjr
+max_adjr2 <- which.max(r1$adjr) 
+max_adjr2
+
+# df with columns for model with max adj R2
+# index according to max_adjR2 value, returns string which is split on space to list and unlist the same
+adjr2_df_cols <- unlist(strsplit(r1$predictors[max_adjr2], split = ' '))
+adjr2_df_cols
+prost_adjr2_df <- prostate[adjr2_df_cols]
+
+# add response variable and verify structure
+lpsa <- prostate$lpsa
+prost_adjr2_df <- cbind(lpsa, prost_adjr2_df)
+str(prost_adjr2_df)
+
+# run regression with shortlisted columns
+reg_prost_adjr2 <- lm(lpsa~., data = prost_adjr2_df)
+summary(reg_prost_adjr2)
+
+```
+
 d-) Mallows $C_p$
 
+```{r}
+# get model number with minimum Cp
+r1$cp
+min_cp <- which.min(r1$cp) 
+min_cp
+
+# df with columns for model with minimum Cp
+# index according to min_cp value, returns string which is split on space to list and unlist the same
+cp_df_cols <- unlist(strsplit(r1$predictors[min_cp], split = ' '))
+cp_df_cols
+prost_cp_df <- prostate[cp_df_cols]
+
+# add response variable and verify structure
+lpsa <- prostate$lpsa
+prost_cp_df <- cbind(lpsa, prost_cp_df)
+str(prost_cp_df)
+
+# run regression with shortlisted columns
+reg_prost_cp <- lm(lpsa~., data = prost_cp_df)
+summary(reg_prost_cp)
+
+```
 
 ## Problem 3 
 
@@ -57,10 +212,141 @@ Refer to the SENIC data set in problem 1. Length of stay (Y) is to be predicted,
 
 a-) Prepare separate dot plots for each of the predictor variables. Are there any noteworthy features in these plots? Comment.
 
-b-) Obtain the scatter plot matrix. Also obtain the correlation matrix of the X variables. Is thereevidence of strong linear pairwise associations among the predictor variables here?
+```{r}
+# build df
+str(senic)
+senic$y <- log(senic$Length.of.stay) # add log
+senic_p3 <- subset(senic, select = -c(Medical.school.affiliation, Region, Length.of.stay)) # drop columns not needed
+senic_p3build <- senic_p3[57:113,] # model building dataset
+head(senic_p3build)
+str(senic_p3build)
+
+# senic_p3hold <- senic[!(senic$y %in% senic_p3build$y),]
+senic_p3hold <- senic_p3[1:56,]
+
+# dot plots
+newer.par = par(mfrow = c(2,4))
+for (i in 1:(ncol(senic_p3)-1)) {
+  #print(i)
+  plot(senic_p3[,i],senic_p3$y, xlab = colnames(senic_p3)[i], ylab = 'Log_length_of_stay')
+}
+newer.par
+
+```
+
+Most of the features seem to vary in a non-linear fashion wit the response variable - log(length of stay). There is some semblance of linearity in Infection.risk Number.of.nurses and Routine.chest.X.ray.ratio. However, the linear relationships appear to be weak and we should explore transformation of most predictors as well as potential interactions.
+
+b-) Obtain the scatter plot matrix. Also obtain the correlation matrix of the X variables. Is there evidence of strong linear pairwise associations among the predictor variables here?
+
+```{r}
+print(round(cor(senic_p3build),3))
+plot(senic_p3build)
+```
+
+From the plot and the correlation matrix above we can see that except for Average.daily.census (correlation = 0.60) there is not much evidence of linear relationship. The other factors having moderate linear relation are Infection.risk (0.471), Number.of.beds (0.574) and Number.of.nurses (0.470)
 
 c-) Obtain the three best subsets according to the $C_p$ criterion, Which of these subset models appears to have the smallest bias?
 
+```{r}
+# build regression model
+reg3c <- lm(y~.,data = senic_p3build)
+summary(reg3c)
+
+# perform best subset selection
+b1 <- ols_step_best_subset(reg3c, details = TRUE)
+b1
+
+# get index of lowest 3 values
+b1_cp <- b1$cp
+b1_cp_index <- which(b1_cp %in% sort(b1_cp)[1:3])
+b1_cp_index
+
+# df with columns for model with minimum Cp
+# index according to min_cp value, returns string which is split on space to list and unlist the same
+senic_cp1_cols <- unlist(strsplit(b1$predictors[b1_cp_index[1]], split = ' '))
+senic_cp1_cols
+senic_cp1_df <- senic_p3build[senic_cp1_cols]
+
+# add response variable and verify structure
+y <- senic_p3build$y
+senic_cp1_df <- cbind(y, senic_cp1_df)
+str(senic_cp1_df)
+
+# run regression with min cp
+reg_senic_cp1 <- lm(y~., data = senic_cp1_df)
+summary(reg_senic_cp1)
+
+# get SSE value
+anova_cp1 <- anova(reg_senic_cp1)
+sse_cp1 <- anova_cp1[length(anova_cp1$`Sum Sq`),2]
+sse_cp1
+
+# df with columns for model with 2nd lowest Cp
+# index according to 2nd lowest cp value, returns string which is split on space to list and unlist the same
+senic_cp2_cols <- unlist(strsplit(b1$predictors[b1_cp_index[2]], split = ' '))
+senic_cp2_cols
+senic_cp2_df <- senic_p3build[senic_cp2_cols]
+
+# add response variable and verify structure
+y <- senic_p3build$y
+senic_cp2_df <- cbind(y, senic_cp2_df)
+str(senic_cp2_df)
+
+# run regression with min cp
+reg_senic_cp2 <- lm(y~., data = senic_cp2_df)
+summary(reg_senic_cp2)
+
+# get SSE value
+anova_cp2 <- anova(reg_senic_cp2)
+sse_cp2 <- anova_cp2[length(anova_cp2$`Sum Sq`),2]
+sse_cp2
+
+# df with columns for model with 3rd lowest Cp
+# index according to 3rd lowest cp value, returns string which is split on space to list and unlist the same
+senic_cp3_cols <- unlist(strsplit(b1$predictors[b1_cp_index[3]], split = ' '))
+senic_cp3_cols
+senic_cp3_df <- senic_p3build[senic_cp3_cols]
+
+# add response variable and verify structure
+y <- senic_p3build$y
+senic_cp3_df <- cbind(y, senic_cp3_df)
+str(senic_cp3_df)
+
+# run regression with min cp
+reg_senic_cp3 <- lm(y~., data = senic_cp3_df)
+summary(reg_senic_cp3)
+
+# get SSE value
+anova_cp3 <- anova(reg_senic_cp3)
+sse_cp3 <- anova_cp3[length(anova_cp3$`Sum Sq`),2]
+sse_cp3
+
+# calculate minimum SSE value
+sse_all_cp <- cbind(sse_cp1, sse_cp2, sse_cp3)
+which.max(sse_all_cp)
+```
+
+Bias refers to the error introduced by trying to approximate a complex relationship with a simple (for example linear) model. A model with low bias would explain most of the variation in the dataset and hence have low SSE. Here we choose the model with max SSE.
+
+As seen above the model with the lowest Cp has the highest SSE of 0.8579723. This model has log(Length of Stay) as the response variable, with Age & Average Daily census as predictors. It gives us Adj R2 = 0.5192; F-stat = 19.07 & p-val of 1.614e-08
+
 d-) The regression model identified as best in part c is to be validated by means of the validation data set consisting of cases 1-56.  Fit the regression model identified in part c as best to the validation data set. Compare the estimated regression coefficients and their estimated standard deviations with those obtained in Part C. 
 
+```{r}
+str(senic_p3hold)
+senic_p3_hold_final <- data.frame(senic_p3hold$y, senic_p3hold$Age, senic_p3hold$Routine.chest.X.ray.ratio, senic_p3hold$Average.daily.census)
+colnames(senic_p3_hold_final) <- c('y', 'Age', 'Routine.chest.X.ray.ratio', 'Average.daily.census')
+reg3d <- lm(y~., data = senic_p3_hold_final)
+summary(reg3d)
+
+```
+
+The regression coefficients of the model in the build and holdout sets are largely similar with differences in the 1000th decimal place. this is similar for the standard errors of the coefficients.
+
+The residual standard error of the build set is 0.1272 while that of the holdout set is 0.1497; i.e. the build set RSE is 84% that of the holdout set. This implies that there is an increase in unexplained variance from the build to the holdout set as expected. 
+
 e-) Also compare the error mean squares and coefficients of multiple determination. Does the model fitted to the validation data set yield similar estimates as the model fitted to the model-building data set?
+
+The adj R2 of the build set is 0.4919 while that of the holdout set is 0.2526. This is nearly half that of the build set. A similar pattern is seen in the F-statistics - 19.07 vs 7.196 and p-values 1.614e-08 vs 0.0003955. 
+
+While in both cases the values are significant there is a significant change when we go from the build set to the holdout set. This indicates that the build set is not an adequate representation of the holdout set. This is expected since we created the build and holdout sets by 1st half and last half as opposed to rnadom indexing. 
