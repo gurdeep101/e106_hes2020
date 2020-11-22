@@ -26,20 +26,108 @@ Refer to Brand preference data, build a model with all independent variables (45
 
 a-) Obtain the studentized deleted residuals and identify any outlying Y observations. Use the Bonferroni outlier test procedure with $\alpha$= 0.10. State the decision rule and conclusion.
 
+```{r}
+rm(list=ls())
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW9") # change before run if needed
+
+library(olsrr) # regression plots
+library(caret) # cross validation
+library(car) # regression diagnostics
+
+brand <- read.csv('Brand Preference.csv')
+head(brand)
+str(brand)
+
+f1 <- lm(Y~., data = brand)
+summary(f1)
+
+ols_plot_resid_stand(f1)
+outlierTest(f1, cutoff = 0.90, n.max = Inf)
+```
+
+Ho : There are no outliers
+Ha : Outliers are present in the data
+
+Decision Rule: if |t*| < t(1-alpha/2n; n-p-1) accept Ho; else reject
+
+From the test results we see that there are no outliers
+
 b-)	Obtain the diagonal elements of the hat matrix, and provide an explanation for the pattern in these elements. 
+
+```{r}
+hii_brand <- hatvalues(f1)
+hii_brand
+```
+
+The hat values are a function of the predictor variables. since the predictor variables are comprised of combinations of 4 unique values of X1and 2 unique values of X2 we see the above pattern.
 
 c-)	Are any of the observations outlying with regard to their X values according? 
 
+```{r}
+influence.measures(f1)
+```
+
+From the table above we see that none of the observations are outlying
+
 d-)	Management wishes to estimate the mean degree of brand liking for moisture content $X_1$ = 10 and sweetness $X_2$ = 3. Construct a scatter plot of $X_2$ against $X_1$ and determine visually whether this prediction involves an extrapolation beyond the range of the data. Also, determine whether an extrapolation is involved. Do your conclusions from the two methods agree? 
+
+```{r}
+plot(brand$X1, brand$X2)
+
+x <- model.matrix(f1)
+xnew <- matrix(c(10,3), nrow(x), ncol(x), byrow = TRUE)
+
+xx_inv <- solve(t(x)%*%x)
+hat_datat <- t(xnew)%*%xx_inv%*%xnew
+hat_datat
+```
+
+We see that there is no visual extrapolation needed beyond the range of the data
 
 e-)	The largest absolute studentized deleted residual is for case 14. Obtain the DFFITS, DFBETAS, and Cook's distance values for this case to assess the influence of this case. What do you conclude? 
 
+```{r}
+influence.measures(f1)$infmat[14,]
+
+```
+
+While point 14 has the maximum absolute values it has only a slight impact on the outcome and we do not need to treat this further
+
 f-)	Calculate the average absolute percent difference in the fitted values with and without case 14. What does this measure indicate about the influence of case 14?
+
+```{r}
+# predict fitted values
+predict_full <- predict(f1, brand)
+
+# fit without row 14
+f1f <- lm(Y~., data = brand[-c(14),])
+summary(f1f)
+# predict fitted values
+predict_less14 <- predict(f1f, brand)
+
+# get average absolute fitted values
+sum(abs((predict_less14-predict_full)/predict_full)*100)/length(predict_full)
+```
+
+The mean difference is 68% which indicates a high influence
 
 g-)	Calculate Cook's distance D; for each case and prepare an index plot. Are any cases influential according to this measure?
 
-h-)	Find the two variance inflation factors. Why are they both equal to 1?
+```{r}
+# calculate coks distance
+influence.measures(f1)$infmat[,6]
+ols_plot_cooksd_chart(f1)
 
+```
+
+As per this measure point 14 is influential
+
+h-)	Find the two variance inflation factors. Why are they both equal to 1?
+```{r}
+vif(f1)
+```
+
+VIF 1 indicates that the predictors are not correlated.
 
 ## Problem 2
 
@@ -47,18 +135,124 @@ Refer to the Lung pressure Data. Increased arterial blood pressure in the lungs 
 
 a-) Find the best regression model by using  first-order terms and  the cross-product term. Ensure that all variables in the model are significant at 5%. 
 
+```{r}
+lung <- read.csv('Lung Pressure.csv')
+head(lung)
+str(lung)
+
+f2a <- lm(Y~.^3, data = lung)
+#summary(f2a)
+
+b2 <- ols_step_best_subset(f2a, details = TRUE, print_plot = TRUE)
+b2
+#plot(b2)
+
+which.max(b2$rsquare)
+which.min(b2$aic)
+which.min(b2$cp)
+
+```
+
+Choosing model 3 since it has minimum AIC & Cp even though model 7 has highest R2 since the difference is only 2%. We include X1 & X2
+
+```{r}
+f2b <- lm(Y~X1*X2, data = lung)
+
+# perform 10 fold CV for the chosen model
+control2b <- trainControl(method = 'cv', number = 10)
+f2b <- train(Y~., data = lung, method = 'lm', trControl = control2b, metric = 'Rsquared')
+
+summary(f2b)
+```
+
+The regression model is Y = 134.399866 - 2.13322 * X1 -1.699330 * X2 + 0.33347 * X1 * X2
+
 b-)	Obtain the residuals and plot them separately against Y and each of the three predictor variables. On the basis of these plots. should any further modification of the regression model be attempted? 
+
+```{r}
+e2b <- f2b$residuals
+newer.par = par(mfrow=c(2,2))
+for (i in 1:ncol(lung)) {
+  #print(i)
+  plot(e2b, lung[,i], xlab = 'residuals', ylab = colnames(lung[i]))
+}
+```
+
+From the plots above there doesn't appear to be any need for further modification.
 
 c-)	Prepare a normal probability plot of the residuals. Also obtain the coefficient of correlation between the ordered residuals and their expected values under normality. Does the normality assumption appear to be reasonable here?
 
+```{r}
+newer.par = par(mfrow = c(2,2))
+plot(f2b)
+newer.par
+
+ols_plot_resid_qq(f2b)
+ols_test_correlation(f2b)
+
+```
+
+There is a high amount of correlation 0.9633751
+
+The normal probability plot does not track the 45 degree line. There are also a few outliers present outside + / - 1 SD range. Hence, the assumption does not appear to be reasonable here.
+
 d-)	Obtain the variance inflation factors. Are there any indications that serious multicollinearity problems are present? Explain. 
+
+```{r}
+vif(f2b)
+```
+
+High VIF values as seen above point to existence of serious multicolinearity problems; especially in the interaction variables.
 
 e-)	Obtain the studentized deleted residuals and identify outlying Y observations. Use the Bonferroni outlier test procedure with $\alpha$= .05. State the decision rule and conclusion. 
 
+```{r}
+ols_plot_resid_stand(f2b)
+outlierTest(f2b, cutoff = 0.95)
+```
+
+Points 7 & 1 appear to be outliers
+
 f-)	Obtain the diagonal elements of the hat matrix. Are there any outlying X observations? Discuss. 
+
+```{r}
+# get hat values & plot
+hii_f2b <- hatvalues(f2b)
+hii_f2b
+
+n <- length(lung$Y)
+p <-  sum(hii_f2b)
+index <- hii_f2b>2*p/n
+
+#index <- influence.measures(f2b)$is.inf[,8]
+
+plot(lung$X1, lung$X2, pch = 16)
+text(lung$X1+0.5, lung$X2, labels = as.character(1:length(lung$X1)), col = 'red')
+points(lung$X1[index], lung$X2[index], cex = 2.0, col = 'blue')
+
+```
+
+Per this points 3, 5 and 15 are outliers
 
 g-)	Cases 3, 8, and 15 are moderately far outlying with respect to their X values, and case 7 is relatively far outlying with respect to its Y value. Obtain DFFITS, DFBETAS, and Cook's distance values for these cases to assess their influence. What do you conclude? 
 
+```{r}
+# plot charts
+newer.par = par(mfrow = c(2,2))
+ols_plot_cooksd_chart(f2b)
+ols_plot_dffits(f2b)
+ols_plot_resid_stand(f2b)
+ols_plot_resid_lev(f2b)
+newer.par
+
+# get their values
+influence.measures(f2b)$infmat[3,]
+influence.measures(f2b)$infmat[8,]
+influence.measures(f2b)$infmat[7,]
+influence.measures(f2b)$infmat[15,]
+```
+
+Point 8 is a significant outlier while others are small and do not need further process
 
 ## Problem 3 
 
@@ -66,8 +260,111 @@ Refer to the Prostate cancer data set. Serum prostate-specific antigen (PSA) was
 
 a-) Select a random sample of 65 observations to use as the model-building data set. Develop a best subset model for predicting PSA. Justify your choice of model. Assess your model's ability to predict and discuss its usefulness to the oncologists.
 
+```{r}
+# load data and create sample
+prost <- read.csv('Prostate Cancer.csv')
+head(prost)
+str(prost)
+
+set.seed(1023)
+ind <- sample(1:nrow(prost), 65)
+ptrain <- prost[ind,]
+ptest <- prost[-ind,]
+
+# select best subset - to save computation power we don't use interaction terms
+f3a <- lm(PSA.level~.^2, data = ptrain)
+summary(f3a)
+
+b3 <- ols_step_best_subset(f3a, details = TRUE)
+b3
+#plot(b3)
+
+which.max(b3$rsquare)
+which.min(b3$aic)
+which.min(b3$cp)
+
+```
+
+From above we see that model 2 has lowest AIC and Cp measures. We choose this even though model 7 has highest R2 since the difference is about 2% in R2. We fit this model
+
+```{r}
+# Create a separate dataframe with calculations
+aic_ptrain_cols <- unlist(strsplit(b3$predictors[which.min(b3$aic)], split = ' '))
+aic_ptrain_cols
+
+aic_ptrain_df <- ptrain[aic_ptrain_cols]
+ptrain_can <- ptrain_can$PSA.level
+aic_ptrain_df <- cbind(pt_can, aic_prost_df)
+head(aic_ptrain_df)
+
+# regression
+f3b <- lm(ptrain_can~., data = aic_ptrain_df)
+
+# build final model through 10 fold CV
+control3b <- trainControl(method = 'cv', number = 10)
+f3b <- train(ptrain_can~., data = aic_ptrain_df, method = 'lm', trControl = control3b, metric = 'Rsquared')
+
+summary(f3b)
+```
+
+
 b-) Perform appropriate diagnostic checks to evaluate outliers and assess their influence.
+
+```{r}
+# Basic plots
+newer.par = par(mfrow = c(2,2))
+plot(f3b)
+newer.par
+
+# plot charts
+ols_plot_dfbetas(f3b)
+ols_plot_cooksd_chart(f3b)
+ols_plot_dffits(f3b)
+ols_plot_resid_stand(f3b)
+ols_plot_resid_lev(f3b)
+
+# get hat values & plot
+hii_f2b <- hatvalues(f2b)
+hii_f2b
+
+n <- length(lung$Y)
+p <-  sum(hii_f2b)
+index <- hii_f2b>2*p/n
+
+#index <- influence.measures(f2b)$is.inf[,8]
+
+plot(lung$X1, lung$X2, pch = 16)
+text(lung$X1+0.5, lung$X2, labels = as.character(1:length(lung$X1)), col = 'red')
+points(lung$X1[index], lung$X2[index], cex = 2.0, col = 'blue')
+
+```
 
 c-)	Fit the regression model identified in part a to the validation data set. Compare the estimated regression coefficients and their estimated standard errors with those obtained in part a. Also compare the error mean square and coefficients of multiple determination. Does the model fitted to the validation data set yield similar estimates as the model fitted to the model-building data set? 
 
+```{r}
+# predict on train set and get summary
+predict_ptrain <- predict(f3b, ptrain)
+model_ptrain <- data.frame(obs = ptrain$PSA.level, pred = predict_ptrain)
+defaultSummary(model_ptrain)
+
+# predict on test set and get summary
+predict_ptest <- predict(f3b, ptest)
+model_ptest <- data.frame(obs = ptest$PSA.level, pred = predict_ptest)
+defaultSummary(model_ptest)
+```
+
 d-) Calculate the mean squared prediction error  and compare it to MSE obtained from the model-building data set. Is there evidence of a substantial bias problem in MSE here?
+
+```{r}
+# predict on train set and get summary
+predict_ptrain <- predict(f3b, ptrain)
+model_ptrain <- data.frame(obs = ptrain$PSA.level, pred = predict_ptrain)
+defaultSummary(model_ptrain)
+
+# predict on test set and get summary
+predict_ptest <- predict(f3b, ptest)
+model_ptest <- data.frame(obs = ptest$PSA.level, pred = predict_ptest)
+defaultSummary(model_ptest)
+
+```
+

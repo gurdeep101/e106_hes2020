@@ -1,0 +1,56 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+###### hat values for each observation ######
+
+Dataset.10TA01 <- read.csv("Dataset_10TA01.csv")
+f1<-lm(Y~X1+X2,data=Dataset.10TA01)
+hii <- hatvalues(f1)
+hii
+
+X<-model.matrix(f1)
+XXInv<-solve(t(X)%*%X)
+Hat.Matrix<-X%*%XXInv%*%t(X)
+influence.measures(f1)
+
+### Cooks distance plot####
+library(olsrr)
+ols_plot_cooksd_bar(f1)
+ols_plot_cooksd_chart(f1)
+plot(f1)
+
+
+### CDFBETAs####
+
+cutoff= 2/SQRT[n]
+ols_plot_dfbetas(f1)
+
+### DFFITS Plots####
+
+cutoff= 2*SQRT[(p+1)/(n-p-1)]
+ols_plot_dffits(f1)
+
+### Studentized Residual Plot ####
+ols_plot_resid_stud(f1)
+
+### Standardized Residual Chart ####
+ols_plot_resid_stand(f1)
+
+####Studentized Residuals vs Leverage Plot ####
+Graph for detecting influential observations.
+
+ols_plot_resid_lev(f1)
+
+
+####Deleted Studentized Residual vs Fitted Values Plot####
+Graph for detecting outliers.
+
+ols_plot_resid_stud_fit(f1)
+
+####Potential Residual Plot####
+Plot to aid in classifying unusual observations as high-leverage points, outliers, or a combination of both.
+ols_plot_resid_pot(f1)```{r}
+
+```
+

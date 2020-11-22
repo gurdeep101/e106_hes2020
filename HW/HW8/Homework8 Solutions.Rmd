@@ -1,0 +1,160 @@
+---
+title: 'CSCI E-106:Assignment 8 Solutions'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: November 16, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+## Solutions:
+
+## Problem 1
+
+Refer to the the Efficacy of Nosocomial Infection Control (SENIC) data set. The primary objective of the Study on  was to determine whether infection surveillance and control programs have reduced the rates of nosocomial (hospitalacquired) infection in United States hospitals. This data set consists of a random sample of 113 hospitals selected from the original 338 hospitals surveyed. Each line of the dataset has an identification number and
+provides information on 11 variables for a single hospital. The data presented here are for the 1975-76 study
+period. (15 points, 5 points each)
+
+
+a-) Second-order regression model is to be fitted for relating number of nurses (Y ) to available facilities and services (X).
+
+$\hat{Y}$=150.079+7.066$X$+0.101$X^2$. All variables are significant and $R^2$ is 65%.
+
+```{r}
+SENIC <- read.csv("/cloud/project/SENIC.csv")
+Y=SENIC$Number.of.nurses
+X=SENIC$Available.facilities.and.services
+X1=scale(X,scale=FALSE)
+X12=X1^2
+f1<-lm(Y~X1+X12)
+summary(f1)
+anova(f1)
+
+```
+
+b-) Plot the residuals against the fitted values. How well does the second-order model appear to fit the data?
+The plot indicates heteroscedasticity. I also checked the QQ plot and it indicates that the departurtures from the normal distribution.
+```{r}
+par(mfrow=c(1,2))
+plot(f1$fitted.values,f1$residuals,xlab="Fitted Values",ylab="Residuals")
+stdres = rstandard(f1)
+qqnorm(stdres,ylab="Standardized Residuals",xlab="Normal Scores",main="SENIC") 
+qqline(stdres)
+```
+
+
+c-) Test whether the quadratic term can be dropped from the regression model; use $\alpha$=0.1,  State the alternatives, decision rule, and conclusion.
+
+$H_0$:The quadratic term can be dropped from the regression model.
+$H_a$:The quadratic term can NOT be dropped from the regression model.
+
+P value is 0.0003, Reject $H_0$. The quadratic term can NOT be dropped from the regression model.
+
+```{r}
+fr<-lm(Y~X)
+anova(fr,f1)
+```
+
+
+## Problem 2
+
+Use the fortune data under the faraway r library, data(prostate,package="faraway"). Use the prostate data with lpsa as the response and the other variables as predictors. 
+
+Implement the following variable selection methods to determine the “best” model: (40 points, 10 points each)
+
+a-) Backward elimination
+
+The model is $lpsa$=-0.268 + 0.552*lcavol + 0.509*lweight +0.666*svi and $R^2$ is 62%. All variables are signficant at $\alpha=0.05$.
+```{r}
+library(olsrr)
+library(datasets)
+data(prostate,package="faraway")
+k1<-lm(lpsa~.,data=prostate)
+k2<-ols_step_backward_p(k1,prem = 0.05,details=TRUE)
+k2
+```
+
+b-) AIC. on the graph, the elbow point is for 3 variables models. The variables are lcavol, lweight, and svi. The same model in part a. 
+```{r}
+b1<-ols_step_best_subset(k1)
+b1
+plot(b1)
+plot(1:8,b1$aic,xlab="Number of Predictors",ylab="AIC")
+
+```
+
+c-) Adjusted $R_a^2$. on the graph, the elbow point is for 3 variables models. The variables are lcavol, lweight, and svi. The same model in part a and b. 
+```{r}
+plot(1:8,b1$rsquare,xlab="Number of Predictors",ylab="Adjusted R Square")
+```
+
+d-) Mallows $C_p$. Based on Mallow $C_p$, the model was selected in previous part, p=4 and $C_p$=6.2. For the model with  lcavol,lweight, lbph,  and svi; p=5 and  $C_p$=5.6. It is a judgment call, we want to $C_p$ to be close to p. In this model, lbph is not significant.
+```{r}
+#p includes the intercept, adding one.
+plot(2:9,b1$cp,xlab="Number of Predictors",ylab="Mallow's Cp")
+f2<-lm(lpsa~lcavol+lweight+lbph+svi,data=prostate)
+summary(f2)
+```
+
+
+## Problem 3 
+
+Refer to the SENIC data set in problem 1. Length of stay (Y) is to be predicted, and the pool of potential predictor variables includes all other variables in the data set except medical school affiliation and region. It is believed that a model with $log(Y)$  as the response variable and the predictor variables in first-order terms with no interaction terms will be appropriate. Consider cases 57-113 to constitute the model-building data set to be used for the following analyses.(45 points, 9 points each)
+
+a-) Prepare separate dot plots for each of the predictor variables. Are there any noteworthy features in these plots? Comment.
+
+Length of stay is highly correlated with Number of beds and average daily census. It is moderately correlated with Infection.risk,Number.of.nurses.  
+```{r}
+dim(SENIC)
+dev=SENIC[57:113,-c(7:8)]
+hold=SENIC[1:56,]
+plot(dev)
+round(cor(dev),2)
+```
+
+b-) Obtain the scatter plot matrix. Also obtain the correlation matrix of the X variables. Is there evidence of strong linear pairwise associations among the predictor variables here?
+
+See above. The number of beds is highly correlated with average daily census, Number.of.nurses, and Available.facilities.and.services.
+
+c-) Obtain the three best subsets according to the $C_p$ criterion, Which of these subset models appears to have the smallest bias?
+
+See below, model #3 has the smallest bias, the variables are 
+
+Age,Routine.chest.X.ray.ratio, and Average.daily.census. The $R^2$ is 51%. All variables are significant. 
+
+```{r}
+k1<-lm(log(Length.of.stay)~.,data=dev)
+b1<-ols_step_best_subset(k1)
+b1
+plot(b1)
+f<-lm(log(Length.of.stay)~Age+Routine.chest.X.ray.ratio+Average.daily.census,data=dev)
+summary(f)
+```
+
+d-) The regression model identified as best in part c is to be validated by means of the validation data set consisting of cases 1-56.  Fit the regression model identified in part c as best to the validation data set. Compare the estimated regression coefficients and their estimated standard deviations with those obtained in Part C. 
+
+The coeeficents are similar but $R^2$ is reduced to 30%. 
+
+```{r}
+f1<-lm(log(Length.of.stay)~Age+Routine.chest.X.ray.ratio+Average.daily.census,data=hold)
+summary(f1)
+rbind(f$coefficients,f1$coefficients)
+```
+
+e-) Also compare the error mean squares and coefficients of multiple determination. Does the model fitted to the validation data set yield similar estimates as the model fitted to the model-building data set?
+
+Residual standard error: 0.1272 vs 0.1497
+Multiple R-squared:  0.5192 vs 0.2934
+
+The model coefficients and Residual standard error are very close to each other. However, $R^2$ is different indicating that there could be outliers in the hold out sample. The further investigation is needed. 
