@@ -1,0 +1,427 @@
+---
+title: 'CSCI E-106:Assignment 10'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: December 7, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+
+## Problem 1
+
+Refer to the Cement Composition Data. The variables collected were the amount of tricalcium aluminate
+($X_1$), the amount of tricalcium silicate ($X_2$), the amount of tetracalcium alumino ferrite
+($X_3$), the amount of dicalcium silicate ($X_4$), and the heat evolved in calories per gram of
+cement (Y). (25 points, 5 points each)
+
+
+a -) Fit regression model for four predictor variables to the data. State the estimated
+regression function. (5 pt)
+
+```{r}
+rm(list = ls()) 
+# change path below before running
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW10")
+
+library(glmnet) # ridge, lasso, ElasticNet, Logistic, Poisson, Cox
+library(rpart) # regression trees
+library(lmtest) # time series
+library(Hmisc) # lag
+library(orcutt) # cochrane orcutt
+library(HoRM) # hildreth lu
+library(rpart.plot) # plots of decision trees
+library(neuralnet) # nueral networks
+
+# load and basic eda - check for NA, etc.
+cement <- read.csv('Cement Composition.csv')
+head(cement)
+summary(cement)
+str(cement)
+
+reg1a_lm <- lm(Y~., data = cement)
+summary(reg1a_lm)
+
+# get coefficients, sse and R2
+coef1a <- reg1a_lm$coefficients; coef1a
+sse1a <- anova(reg1a_lm)[5,2]; sse1a
+rsq1a <- summary(reg1a_lm)$r.squared; rsq1a
+```
+
+Regression function is stated as Y = 62.4054 + 1.5511 * X1 + 0.5102 * X2 + 0.1019 * X3 - 0.1441 * X4
+
+b-) Fit a ridge regression model and find the best $\lambda$. 
+
+```{r}
+# ridge
+x <- model.matrix(Y~., data = cement)[,-c(1)] # drop Y
+y <- cement$Y
+
+# reg1b_ridge <- glmnet(x, y, alpha = 0, nlambda = 100, lambda.min.ratio = 0.0001)
+
+# use CV to select best lambda
+reg1b_ridge_cv <- cv.glmnet(x, y, alpha = 0, nlambda = 100, lambda.min.ratio = 0.0001)
+
+# best lambda
+ridge1b_best <- reg1b_ridge_cv$lambda.min; ridge1b_best
+
+# get coefficients and r2
+coef1b <- coef(reg1b_ridge_cv, s = ridge1b_best); coef1b
+
+# define function for sse
+sse_fn <- function(actual, predicted) {
+  sum((actual-predicted)^2)
+}
+
+# define function for R2
+rsq_fn <- function(actual, predicted) {
+  sum((predicted - mean(actual))^2)/sum((actual-mean(actual))^2)
+}
+
+pred1b <- predict(reg1b_ridge_cv, s = ridge1b_best, newx = x)
+sse1b <- sse_fn(y, pred1b); sse1b
+rsq1b <- rsq_fn(y, pred1b); rsq1b
+```
+
+c-) Fit a ridge regression model and find the best $\lambda$. 
+
+```{r}
+# lasso
+#reg1c_lasso <- glmnet(x, y, alpha = 1, nlambda = 100, lambda.min.ratio = 0.0001)
+
+# use CV to select best lambda
+reg1c_lasso_cv <- cv.glmnet(x, y, alpha = 1, nlambda = 100, lambda.min.ratio = 0.0001)
+lasso1c_best <- reg1c_lasso_cv$lambda.min; lasso1c_best
+
+# get coefficients
+coef1c <- coef(reg1c_lasso_cv, s = lasso1c_best); coef1c
+pred1c <- predict(reg1c_lasso_cv, s = lasso1c_best, newx = x)
+sse1c <- sse_fn(y, pred1c); sse1c
+rsq1c <- rsq_fn(y, pred1c); rsq1c
+```
+
+d-) Fir an elastic net  model 
+
+```{r}
+# elastic net
+#reg1d_enet <- glmnet(x, y, alpha = 0.5, nlambda = 100, lambda.min.ratio = 0.0001)
+
+# use CV to select best lambda
+reg1d_enet_cv <- cv.glmnet(x, y, alpha = 0.5, nlambda = 100, lambda.min.ratio = 0.0001)
+
+enet1d_best <- reg1d_enet_cv$lambda.min; enet1d_best
+
+# get coefficients
+coef1d <- coef(reg1d_enet_cv, s = enet1d_best); coef1d
+pred1d <- predict(reg1d_enet_cv, s = enet1d_best, newx = x)
+sse1d <- sse_fn(y, pred1d); sse1d
+rsq1d <- rsq_fn(y, pred1d); rsq1d
+```
+
+e-) Compare all models built in part a, b, c, and d and choose the optimal model and explain your rationale 
+
+```{r}
+# get coefficients of all models
+coef_1all <- cbind(coef1a, coef1b, coef1c, coef1d); coef_1all
+
+# get SSE & R2 of all models
+sse_all <- cbind(sse1a, sse1b, sse1c, sse1d); sse_all
+rsq_all <- cbind(rsq1a, rsq1b, rsq1c, rsq1d); rsq_all
+
+
+
+```
+
+As seen above all modes give similar results. We can choose the lasso model from 1c since it has less coefficients.
+
+## Problem 2
+
+Refer to the Prostate cancer data set in the problem 3 in the Homework 9. Select a random
+sample of 65 observations to use as the model-building data set. (15 points, 5 each)
+
+
+a-) Develop a regression tree for predicting PSA. Justify your choice of number of regions
+(tree size), and interpret your regression tree.
+
+```{r}
+prost <- read.csv('Prostate Cancer.csv')
+head(prost)
+summary(prost)
+str(prost)
+
+# select sample of 65
+set.seed(1023)
+ind <- sample(nrow(prost), 65)
+train2a <- prost[ind,]
+test2a <- prost[-ind,]
+
+# run tree
+tree2a <- rpart(PSA.level~., data = train2a)
+#tree2a
+plot_tree2a <- rpart.plot(tree2a, digits = 5, fallen.leaves = TRUE, type = 2, extra = 101)
+```
+
+We start of with 65 samples 
+If capsular penetration is greater than 8.5053 the we have 7 samples for which PSA level is predicted as 97.096
+If capsular penetration is less than 8.5053 and cancer volume is less than 2.4317 then we have 25 samples for which PSA level is predicted as 6.5362
+If capsular penetration is less than 8.5053 and cancer volume is greater than 2.4317 then we have 33 samples for which PSA level is predicted as 16.959
+
+b-) Assess your model's ability to predict and discuss its usefulness to the oncologists.
+
+```{r}
+# predict and get SSE, RSq using functions defined in Q1
+pred2b <- predict(tree2a, test2a)
+
+sse2b <- sse_fn(test2a$PSA.level, pred2b); sse2b
+
+rsq2b <- rsq_fn(test2a$PSA.level, pred2b); rsq2b
+
+```
+
+This model has limited usefulness as seen by R2 = 0.27 on test set. This could be on account of limited training data. As we know, regression trees require large amounts of training data. 
+
+c-) Compare the performance of your regression tree model with that of the best regression
+model obtained in the problem 3 in the Homework 9. Which model is more easily interpreted and why?
+
+This model has an Rsq of 0.27 while for Q3 HW9 we had Rsq of 0.3844 on test set. Given the limitation of data and that regression trees do nt allow us to determine the overall net effect of nidividual features we choose the Q3 HW9
+
+## Problem 3 
+
+Refer to the Prostate cancer data set in the problem 3 in the Homework 9. Select a random
+sample of 65 observations to use as the model-building data set. (15 points, 5 each)
+
+a-) Develop a neural network model for predicting PSA. Justify your choice of number of
+hidden nodes and penalty function weight and interpret your model.
+
+```{r}
+train3a <- train2a
+test3a <- test2a
+
+set.seed(1023)
+nn3a <- neuralnet(PSA.level~., data = train3a, hidden = c(3,1), act.fct = 'tanh')
+nn3a$result.matrix
+
+plot(nn3a, rep = 'best')
+
+#pred3b <- compute(nn3a, test3a)
+#pred3b$net.result
+```
+
+We have 6 input nodes and are using 3 hidden nodes. A second layer is used to aggregate
+
+b-) Assess your model's ability to predict and discuss its usefulness to the oncologists.
+
+```{r}
+pred3b <- compute(nn3a, test3a)
+pred3b$net.result
+```
+
+The model has limited ability to predict and is not very useful.
+
+c-)  Compare the performance of your neural nerwork model with that of the best regression
+model obtained in the problem 3 in the Homework 9. Which model is more easily interpreted and why?
+
+Given the model has limited ability to predict, we will prefer Q3 HW9.
+
+## Problem 4
+ 
+Refer to the Advertising Agency Data. Monthly data on amount of billings (Y, in thousands of constant dollars) and on number of hours of staff time (X, in thousand hours) for the 20 most recent months follow. A simple linear regression model is believed to be appropriate. but positively autocorrelated error terms may be present. (20 points 5 each)
+
+a-) Fit a simple linear regression model by ordinary least squares and obtain the residuals.  Conduct a formal test for positive autocorrelation using $\alpha$ = .01. 
+
+```{r}
+adv <- read.csv('Advertising Agency.csv')
+head(adv)
+str(adv)
+
+reg2a <- lm(Y~X, data = adv)
+summary(reg2a)
+
+ei2a <- reg2a$residuals
+
+# Durbin Watson test for autocorrelation
+dwtest(Y~X, data = adv)
+```
+
+As can be seen p-value = 0.002891 there is autocorrelation present for alpha = 0.01
+
+b-) Use a Cochrane-Orcutt procedure to estimate the model and test if the autocorrelation remains after the first iteration
+
+```{r}
+coch1_2b <- cochrane.orcutt(reg2a)
+summary(coch1_2b)
+```
+
+As seen above autocorrelation is eliminated
+
+c-) Restate the estimated regression function obtained in part (b) in terms of the original variables.
+Also obtain $s(b_0)$ and $s(b_1)$. Compare the estimated regression coefficients obtained.
+
+Y = 95.16377 + 50.46593 * X 
+
+Standard error b0 = 0.91343; standard error b1 = 0.28415
+
+d-)Staff time in month 21 is expected to be 3.625 thousand hours. Predict the amount of
+billings in constant dollars for month 21, using a 99 percent prediction intervaL Interpret
+your interval.
+
+```{r}
+yhat_4d <- 95.16377 + (50.46593 * 3.625); yhat_4d
+
+alpha = 1-0.99
+
+#pred_l <- yhat_4d - qt(1-alpha/2, df = n-3)*spred; pred_l
+#pred_u <- yhat_4d + qt(1-alpha/2, df = n-3)*spred; pred_u
+```
+
+
+## Problem 5
+
+Refer to the Advertising Agency Data and Problem 4. (25 points, 5 points each)
+
+a-) Use the Hildreth-Lu procedure to obtain a point estimate of the autocorrelation parameter.
+Do a search at the values $\rho$ = .1, .2, ... , 1.0 and select from these the value of $\rho$ that
+minimizes SSE. Based on your model, obtain an estimate of the transformed regression function. 
+
+```{r}
+prg1 <- function(x, y, rh) {
+  # function to run  Hildreth-Lu method over grid for rh
+  n <- length(rh)
+  # define matrix
+  out <- matrix(0, nrow = n, ncol = 2)
+  # 1st column has rh value
+  out[,1] <- rh
+  for (i in 1:n){
+    d <- anova(hildreth.lu(y = y, x = x, rho = rh[i]))
+    # store sse result in 2nd column
+    out[i,2] <- d$'Sum Sq'[2]
+  }
+  out
+}
+
+rh <- seq(0.1, 1, by = 0.1)
+h1 <- prg1(adv$Y, x = adv$X, rh)
+
+# return minimum value of rh and sse
+h1[which.min(h1[,2]),]
+
+rh_5a <- h1[which.min(h1[,2]),1]; rh_5a
+
+```
+
+As seen above the minimum value of sse is for rh = 0.4. We use this to obtain an estimate of the transformed regression function
+
+```{r}
+ytnew = adv$Y - rh_5a*Lag(adv$Y, shift = 1)
+xtnew = adv$X - rh_5a*Lag(adv$X, shift = 1)
+
+# regress new values
+reg5a <- lm(ytnew~xtnew)
+summary(reg5a)
+
+# check for autocorrelation using DW Test
+dwtest(reg5a)
+```
+
+DW Test shows that no autocorrelation present. The transformed regression function is stated as 
+
+Y' = 57.0406 + 50.4925 * X'
+
+b-) Use the first difference procedure to obtain a point estimate of the autocorrelation parameter.
+Based on your model, obtain an estimate of the transformed regression function. 
+
+```{r}
+# First Difference
+
+# assume rho = 1 & calculate lag
+rho = 1
+ytnew = adv$Y - rho*Lag(adv$Y, shift = 1)
+xtnew = adv$X - rho*Lag(adv$X, shift = 1)
+
+# perform regression
+f1 <- lm(ytnew~xtnew - 1)
+summary(f1)
+
+```
+
+The transformed regression function is stated as 
+
+Y' = 50.164 X'
+
+c-) Test whether any positive autocorrelation remains in the transformed regression model for both part a and b; use $\alpha$ = .01. State the alternatives, decision rule, and conclusion.
+
+```{r}
+# check using DW
+dwtest(f1)
+```
+Ho : No autocorrelation; Ha: There is autocorrelation
+
+As seen above, p-value of 0.7493 indicates that there is no autocorrelation.
+
+d-) Which method would you choose? Explain your rationale
+
+both models have similar results. We choose the Hildreth Lu method since it iterates over a range of values before determining rho as opposed to first difference where rho = 1 is assumed.
+
+e-) For the selected model in part d. Staff time in month 21 is expected to be 3.625 thousand hours. Predict the amount of billings in constant dollars for month 21, using a 99 percent prediction interval. Interpret your interval.
+
+```{r}
+ytnew = adv$Y - rh_5a*Lag(adv$Y, shift = 1)
+xtnew = adv$X - rh_5a*Lag(adv$X, shift = 1)
+
+# regress new values
+reg5a <- lm(ytnew~xtnew)
+summary(reg5a)
+
+mse <- summary(reg5a)$sigma^2
+
+# get intercept
+b0 <- summary(reg5a)[[4]][1,1]/(1-rh_5a); b0
+s_bo <- summary(reg5a)[[4]][1,2]/(1-rh_5a); s_bo
+
+# get coefficient
+b1 <- summary(reg5a)[[4]][2,1]; b1
+s_b1 <- summary(reg5a)[[4]][2,2]; s_b1
+
+yhat_correct <- b0 + b1*adv$X
+yhat_correct
+
+# Point Forecasts
+xn_plus1 <- 3.625
+xn <- rev(adv$X)[1]; xn
+
+yhat_nplus1 <- b0+b1*xn_plus1; yhat_nplus1
+
+yn <- rev(adv$Y)[1]; yn
+en <- yn - (b0+b1*xn); en
+
+yhat_forecast_nplus1 <- yhat_nplus1 + rho*en
+yhat_forecast_nplus1
+
+# Forecast Interval
+xprime <- xtnew
+xbar_prime <- mean(xprime[-1]) # drop 1st value which is NA
+xn_plus1_prime <- xn_plus1 - rho*xn
+
+alpha = 0.05
+n <- length(adv$Y)
+
+spred <- sqrt(mse*(1 + (1/n) + (xn_plus1_prime - xbar_prime)^2/(sum((xprime[-1]-xbar_prime)^2))))
+spred
+
+pred_l <- yhat_forecast_nplus1 - qt(1-alpha/2, df = n-3)*spred; pred_l
+pred_u <- yhat_forecast_nplus1 + qt(1-alpha/2, df = n-3)*spred; pred_u
+
+```
+

@@ -1,9 +1,9 @@
 ---
 title: 'CSCI E-106:Assignment 9'
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -33,6 +33,7 @@ setwd("~/OneDrive/courses/e106/e106_hes2020/HW/HW9") # change before run if need
 library(olsrr) # regression plots
 library(caret) # cross validation
 library(car) # regression diagnostics
+library(MASS) # studentized residuals
 
 brand <- read.csv('Brand Preference.csv')
 head(brand)
@@ -41,7 +42,14 @@ str(brand)
 f1 <- lm(Y~., data = brand)
 summary(f1)
 
+# plot of residuals
 ols_plot_resid_stand(f1)
+
+# studentized deleted residuals
+studres(f1)
+# rstudent(f1)
+
+# test for outliers
 outlierTest(f1, cutoff = 0.90, n.max = Inf)
 ```
 
@@ -78,8 +86,8 @@ x <- model.matrix(f1)
 xnew <- matrix(c(10,3), nrow(x), ncol(x), byrow = TRUE)
 
 xx_inv <- solve(t(x)%*%x)
-hat_datat <- t(xnew)%*%xx_inv%*%xnew
-hat_datat
+#hat_datat <- t(xnew)%*%xx_inv%*%xnew
+#hat_datat
 ```
 
 We see that there is no visual extrapolation needed beyond the range of the data
@@ -87,6 +95,8 @@ We see that there is no visual extrapolation needed beyond the range of the data
 e-)	The largest absolute studentized deleted residual is for case 14. Obtain the DFFITS, DFBETAS, and Cook's distance values for this case to assess the influence of this case. What do you conclude? 
 
 ```{r}
+# max cooks distance value and all other influence measures
+which.max(influence.measures(f1)$infmat[,6])
 influence.measures(f1)$infmat[14,]
 
 ```
@@ -145,7 +155,7 @@ f2a <- lm(Y~.^3, data = lung)
 
 b2 <- ols_step_best_subset(f2a, details = TRUE, print_plot = TRUE)
 b2
-#plot(b2)
+plot(b2)
 
 which.max(b2$rsquare)
 which.min(b2$aic)
@@ -159,23 +169,29 @@ Choosing model 3 since it has minimum AIC & Cp even though model 7 has highest R
 f2b <- lm(Y~X1*X2, data = lung)
 
 # perform 10 fold CV for the chosen model
-control2b <- trainControl(method = 'cv', number = 10)
-f2b <- train(Y~., data = lung, method = 'lm', trControl = control2b, metric = 'Rsquared')
+#control2b <- trainControl(method = 'cv', number = 10)
+#f2b <- train(Y~X1*X2, data = lung, method = 'lm', trControl = control2b, metric = 'Rsquared')
 
 summary(f2b)
 ```
 
-The regression model is Y = 134.399866 - 2.13322 * X1 -1.699330 * X2 + 0.33347 * X1 * X2
+The regression model is Y = 134.399866 - 2.13022 * X1 -1.699330 * X2 + 0.33347 * X1 * X2
+
+As seen from the summary; all variables are significant at 5% LOS
 
 b-)	Obtain the residuals and plot them separately against Y and each of the three predictor variables. On the basis of these plots. should any further modification of the regression model be attempted? 
 
 ```{r}
+#pred2b <- predict(f2b, lung)
+#e2b <- lung$Y-pred2b
+
 e2b <- f2b$residuals
 newer.par = par(mfrow=c(2,2))
 for (i in 1:ncol(lung)) {
   #print(i)
   plot(e2b, lung[,i], xlab = 'residuals', ylab = colnames(lung[i]))
 }
+newer.par
 ```
 
 From the plots above there doesn't appear to be any need for further modification.
@@ -207,6 +223,11 @@ High VIF values as seen above point to existence of serious multicolinearity pro
 e-)	Obtain the studentized deleted residuals and identify outlying Y observations. Use the Bonferroni outlier test procedure with $\alpha$= .05. State the decision rule and conclusion. 
 
 ```{r}
+# studentized deleted residuals
+studres(f2b)
+# rstudent(f2b)
+
+# plots and outlier tests
 ols_plot_resid_stand(f2b)
 outlierTest(f2b, cutoff = 0.95)
 ```
@@ -232,7 +253,7 @@ points(lung$X1[index], lung$X2[index], cex = 2.0, col = 'blue')
 
 ```
 
-Per this points 3, 5 and 15 are outliers
+Per this points 3, 5 and 15 are outliers based on hat values
 
 g-)	Cases 3, 8, and 15 are moderately far outlying with respect to their X values, and case 7 is relatively far outlying with respect to its Y value. Obtain DFFITS, DFBETAS, and Cook's distance values for these cases to assess their influence. What do you conclude? 
 
@@ -252,7 +273,7 @@ influence.measures(f2b)$infmat[7,]
 influence.measures(f2b)$infmat[15,]
 ```
 
-Point 8 is a significant outlier while others are small and do not need further process
+Point 8 is a significant outlier relative to others while others are small and do not need further process
 
 ## Problem 3 
 
@@ -266,18 +287,18 @@ prost <- read.csv('Prostate Cancer.csv')
 head(prost)
 str(prost)
 
-set.seed(1023)
+set.seed(567)
 ind <- sample(1:nrow(prost), 65)
 ptrain <- prost[ind,]
 ptest <- prost[-ind,]
 
-# select best subset - to save computation power we don't use interaction terms
-f3a <- lm(PSA.level~.^2, data = ptrain)
+# select best subset - we don't use interaction terms since the notebook was running for an hour with no results
+f3a <- lm(PSA.level~., data = ptrain)
 summary(f3a)
 
 b3 <- ols_step_best_subset(f3a, details = TRUE)
 b3
-#plot(b3)
+plot(b3)
 
 which.max(b3$rsquare)
 which.min(b3$aic)
@@ -293,16 +314,16 @@ aic_ptrain_cols <- unlist(strsplit(b3$predictors[which.min(b3$aic)], split = ' '
 aic_ptrain_cols
 
 aic_ptrain_df <- ptrain[aic_ptrain_cols]
-ptrain_can <- ptrain_can$PSA.level
-aic_ptrain_df <- cbind(pt_can, aic_prost_df)
+ptrain_can <- ptrain$PSA.level
+aic_ptrain_df <- cbind(ptrain_can, aic_ptrain_df)
 head(aic_ptrain_df)
 
 # regression
 f3b <- lm(ptrain_can~., data = aic_ptrain_df)
 
 # build final model through 10 fold CV
-control3b <- trainControl(method = 'cv', number = 10)
-f3b <- train(ptrain_can~., data = aic_ptrain_df, method = 'lm', trControl = control3b, metric = 'Rsquared')
+#control3b <- trainControl(method = 'cv', number = 10)
+#f3b <- train(ptrain_can~., data = aic_ptrain_df, method = 'lm', trControl = control3b, metric = 'Rsquared')
 
 summary(f3b)
 ```
@@ -324,34 +345,39 @@ ols_plot_resid_stand(f3b)
 ols_plot_resid_lev(f3b)
 
 # get hat values & plot
-hii_f2b <- hatvalues(f2b)
-hii_f2b
+hii_f3b <- hatvalues(f3b)
+hii_f3b
 
-n <- length(lung$Y)
-p <-  sum(hii_f2b)
-index <- hii_f2b>2*p/n
+n <- length(aic_ptrain_df)
+p <-  sum(hii_f3b)
+index <- hii_f3b>2*p/n
 
 #index <- influence.measures(f2b)$is.inf[,8]
 
-plot(lung$X1, lung$X2, pch = 16)
-text(lung$X1+0.5, lung$X2, labels = as.character(1:length(lung$X1)), col = 'red')
-points(lung$X1[index], lung$X2[index], cex = 2.0, col = 'blue')
+plot(aic_ptrain_df$Cancer.volume, aic_ptrain_df$Capsular.penetration, pch = 16)
+text(aic_ptrain_df$Cancer.volume+0.5, aic_ptrain_df$Capsular.penetration, labels = as.character(1:nrow(aic_ptrain_df)), col = 'red')
+points(aic_ptrain_df$Cancer.volume[index], aic_ptrain_df$Capsular.penetration[index], cex = 2.0, col = 'blue')
 
 ```
 
 c-)	Fit the regression model identified in part a to the validation data set. Compare the estimated regression coefficients and their estimated standard errors with those obtained in part a. Also compare the error mean square and coefficients of multiple determination. Does the model fitted to the validation data set yield similar estimates as the model fitted to the model-building data set? 
 
 ```{r}
-# predict on train set and get summary
-predict_ptrain <- predict(f3b, ptrain)
-model_ptrain <- data.frame(obs = ptrain$PSA.level, pred = predict_ptrain)
-defaultSummary(model_ptrain)
+aic_ptest_df <- ptest[aic_ptrain_cols]
+ptest_can <- ptest$PSA.level
+aic_ptest_df <- cbind(ptest_can, aic_ptest_df)
+head(aic_ptest_df)
 
-# predict on test set and get summary
-predict_ptest <- predict(f3b, ptest)
-model_ptest <- data.frame(obs = ptest$PSA.level, pred = predict_ptest)
-defaultSummary(model_ptest)
+# regression
+f3d <- lm(ptest_can~., data = aic_ptest_df)
+summary(f3d)
+
+rbind(f3b$coefficients, f3d$coefficients)
 ```
+
+As seen above the coefficients are very different for the test and validation sets.
+
+Train set has a R2 of 0.55 while test set has R2 of 0.35.
 
 d-) Calculate the mean squared prediction error  and compare it to MSE obtained from the model-building data set. Is there evidence of a substantial bias problem in MSE here?
 
@@ -368,3 +394,4 @@ defaultSummary(model_ptest)
 
 ```
 
+The test model has higher error metrics as compared to the train set.

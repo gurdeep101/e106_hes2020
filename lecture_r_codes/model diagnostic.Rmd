@@ -4,7 +4,7 @@ output: html_notebook
 ---
 ###### hat values for each observation ######
 
-Dataset.10TA01 <- read.csv("Dataset_10TA01.csv")
+Dataset.10TA01 <- read.csv("/cloud/project/Dataset_10TA01.csv")
 f1<-lm(Y~X1+X2,data=Dataset.10TA01)
 hii <- hatvalues(f1)
 hii

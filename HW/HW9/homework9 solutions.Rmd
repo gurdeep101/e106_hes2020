@@ -1,0 +1,273 @@
+---
+title: 'CSCI E-106:Assignment 9'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due Date: November 23, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+## Solutions:
+
+## Problem 1
+
+Refer to Brand preference data, build a model with all independent variables (45 pts, 5 points each)
+
+a-) Obtain the studentized deleted residuals and identify any outlying Y observations. Use the Bonferroni outlier test procedure with $\alpha$= 0.10. State the decision rule and conclusion.
+
+
+No outliers based on the bonferoni test.
+
+```{r}
+Brand.Preference <- read.csv("Brand Preference.csv")
+pr1<-lm(Y~X1+X2,data=Brand.Preference)
+library(olsrr)
+drst<-rstudent(pr1) 
+tb<-qt(1-0.1/(2*16),16-3-1)
+sum(abs(drst)>abs(tb))
+```
+
+b-)	Obtain the diagonal elements of the hat matrix, and provide an explanation for the pattern in these elements.
+
+Max hat value is 0.2375 and the min is 0.1375. The average is 0.19. The compact range, no indication of outliers.
+
+```{r}
+hii <- hatvalues(pr1)
+hii
+summary(hii)
+```
+
+c-)	Are any of the observations outlying with regard to their X values according to the rule of thumb stated in chapater 10? 
+
+No outliers in direction of X, hat values are less than 2*p/n. 
+
+```{r}
+sum(hii>(2*3/16))
+```
+
+d-)	Management wishes to estimate the mean degree of brand liking for moisture content $X_1$ = 10 and sweetness $X_2$ = 3. Construct a scatter plot of $X_2$ against $X_1$ and determine visually whether this prediction involves an extrapolation beyond the range of the data. Also, determine whether an extrapolation is involved. Do your conclusions from the two methods agree? 
+
+The hat value for the prediction is 0.175 which is within the hat values calculated pat c(max= 0.2375 and min=0.1375). No extrapolation is required.  
+
+```{r}
+plot(Brand.Preference$X1,Brand.Preference$X2)
+X<-model.matrix(pr1)
+XXInv<-solve(t(X)%*%X)
+Xhnew<-matrix(c(1,10,3),nrow=1,ncol=3)
+Hatnew<-Xhnew%*%XXInv%*%t(Xhnew)
+Hatnew
+```
+
+e-)	The largest absolute studentized deleted residual is for case 14. Obtain the DFFITS, DFBETAS, and Cook's distance values for this case to assess the influence of this case. What do you conclude? 
+ 
+Case 14 has the max DFIITS, DFBETAS, and Cooks distance. Cooks distance is 2000 larger than the smallest cooks distance. Indicating influential point.
+
+```{r}
+cd<-influence.measures(pr1)
+cd
+cd$infmat[14,6]/cd$infmat[,6]
+```
+f-)	Calculate the average absolute percent difference in the fitted values with and without case 14. What does this measure indicate about the influence of case 14?
+
+Predicted values are increased by %0.62. 
+
+```{r}
+p1<-pr1$fitted.values[-c(14)]
+t1<-lm(Y~X1+X2,data=Brand.Preference[-c(14),])
+p2<-t1$fitted.values
+cbind(Brand.Preference[-c(14),1],p1,p2)
+mean((abs(p1-p2)/p2)*100)
+```
+
+
+g-)	Calculate Cook's distance D; for each case and prepare an index plot. Are any cases influential according to this measure?
+
+Case 14 is an influential point based on the plot. 
+
+```{r}
+ols_plot_cooksd_chart(pr1)
+```
+h-)	Find the two variance inflation factors. Why are they both equal to 1?
+
+X1 and X2 are independent, therefore VIF=1. 
+
+```{r}
+library(faraway)
+vif(pr1)
+ cor(Brand.Preference)
+```
+## Problem 2
+
+Refer to the Lung pressure Data. Increased arterial blood pressure in the lungs frequently leads to the development of heart failure in patients with chronic obstructive pulmonary disease (COPD). The standard method for determining arterial lung pressure is invasive, technically difficult, and involves some risk to the patient. Radionuclide imaging is a noninvasive, less risky method for estimating arterial pressure in the lungs. To investigate the predictive ability of this method, a cardiologist collected data on 19 mild-to-moderate COPD patients. The data includes the invasive measure of systolic pulmonary arterial pressure (Y) and three potential noninvasive predictor variables. Two were obtained by using radionuclide imaging emptying rate of blood into the pumping chamber or the heart ($X_1$) and ejection rate of blood pumped out of the heart into the lungs ($X_2$) and the third predictor variable measures blood gas ($X_3$). (35 points, 5 points each)
+
+a-) Find the best regression model by using  first-order terms and  the cross-product term. Ensure that all variables in the model are significant at 5%. 
+
+The best subet algorithm is suggesting that the third model is the best model based on Adjusted R square values, CP, SBC and AIC. The model is significant and all variables are significant at 5% level.
+
+```{r}
+Lung.Pressure <- read.csv("Lung Pressure.csv")
+pr2<-lm(Y~.^2,data=Lung.Pressure)
+summary(pr2)
+library(olsrr)
+library(datasets)
+k1<-ols_step_best_subset(pr2)
+plot(k1)
+pr2.1<-lm(Y~X1+X2+X1:X2,data=Lung.Pressure)
+summary(pr2.1)
+```
+
+
+b-)	Obtain the residuals and plot them separately against Y and each of the three predictor variables. On the basis of these plots. should any further modification of the regression model be attempted? 
+
+No pattern with residuals and X3, indicating that X3 would not increase the power. There are couple of potential outliers in the data. 
+```{r}
+par(mfrow=c(2,2))
+plot(Lung.Pressure$Y,pr2.1$residuals,ylab="Residuals",xlab="Y")
+plot(Lung.Pressure$X1,pr2.1$residuals,ylab="Residuals",xlab="X1")
+plot(Lung.Pressure$X2,pr2.1$residuals,ylab="Residuals",xlab="X2")
+plot(Lung.Pressure$X3,pr2.1$residuals,ylab="Residuals",xlab="X3")
+```
+c-)	Prepare a normal probability plot of the residuals. Also obtain the coefficient of correlation between the ordered residuals and their expected values under normality. Does the normality assumption appear to be reasonable here?
+
+The correlation is 96%, and graph indicates that the assumption is reasonable. 
+
+```{r}
+stdei<- rstandard(pr2.1)
+qqnorm(stdei,ylab="Standardized Residuals",xlab="Normal Scores", main="QQ Plot")
+qqline(stdei,col = "steelblue", lwd = 2)
+a2<-anova(pr2.1)
+mse<-a2$`Mean Sq`[4]
+ei<-pr2.1$residuals
+ei.rank<-rank(ei)
+z1<-(ei.rank-0.375)/(19+0.375)
+exp.rank<-sqrt(mse)*qnorm(z1)
+cor(exp.rank,ei)
+```
+
+d-)	Obtain the variance inflation factors. Are there any indications that serious multicollinearity problems are present? Explain. 
+
+Multicollinearity present VIF>10 for X2 and the interaction term. 
+
+```{r}
+library(faraway)
+vif(pr2.1)
+```
+
+e-)	Obtain the studentized deleted residuals and identify outlying Y observations. Use the Bonferroni outlier test procedure with $\alpha$= .05. State the decision rule and conclusion. 
+
+No outliers based on the bonforeni test. the largest deleted residual is observation 7, which larger than 3. 
+
+```{r}
+drst<-rstudent(pr2.1) 
+tb<-qt(1-0.05/(2*19),19-4-1)
+sum(abs(drst)>abs(tb))
+```
+
+
+f-)	Obtain the diagonal elements of the hat matrix. Are there any outlying X observations? Discuss. 
+
+Indicating 3 outliers in X. Observations 3,8 and 15.
+
+```{r}
+hii <- hatvalues(pr2.1)
+hii
+summary(hii)
+sum(hii>(2*4/19))
+(hii>(2*4/19))
+```
+
+g-)	Cases 3, 8, and 15 are moderately far outlying with respect to their X values, and case 7 is relatively far outlying with respect to its Y value. Obtain DFFITS, DFBETAS, and Cook's distance values for these cases to assess their influence. What do you conclude? 
+Case 8 has the largest cooks distance, it is an influential point.Cases 1 and 7 are outliers. 
+
+```{r}
+cd2<-influence.measures(pr2.1)
+cd2
+cd3<-cd2$infmat
+cd3[c(3,7,8,15),]
+ols_plot_cooksd_chart(pr2.1)
+ols_plot_dfbetas(pr2.1)
+ols_plot_dffits(pr2.1)
+ols_plot_resid_stud_fit(pr2.1)
+```
+
+## Problem 3 
+
+Refer to the Prostate cancer data set. Serum prostate-specific antigen (PSA) was determined in 97 men with advanced prostate cancer. PSA (Y) is a well-established screening test for prostate cancer and the oncologists wanted to examine the correlation between level of PSA and a number of clinical measures for men who were about to undergo radical prostatectomy. The measures are cancer volume ($X_1$), prostate weight ($X_2$), patient age ($X_3$), the amount of benign prostatic hyperplasia ($X_4$), seminal vesicle invasion ($X_5$), capsular penetration ($X_6$), and Gleason score ($X_7$). (20 points, 5 points each)  -- Please use set.seed(567) --
+
+a-) Select a random sample of 65 observations to use as the model-building data set. Develop a best subset model for predicting PSA. Justify your choice of model. Assess your model's ability to predict and discuss its usefulness to the oncologists.
+
+We tried two variable selection methdoldogies, best subset and stepwise. Both methods are suggesting Y=X1+X5 to be the best model.
+
+```{r}
+library(olsrr)
+PROSTATE.CANCER <- read.csv("Prostate Cancer.csv")
+set.seed(567)
+Y=PROSTATE.CANCER$PSA.level
+X1=PROSTATE.CANCER$Cancer.volume
+X2=PROSTATE.CANCER$Weight
+X3=PROSTATE.CANCER$Age
+X4=PROSTATE.CANCER$Benign.prostatic.hyperplasia
+X5=PROSTATE.CANCER$Seminal.vesicle.invasion
+X6=PROSTATE.CANCER$Capsular.penetration
+X7=PROSTATE.CANCER$Gleason.score
+sample.ind <- sample(1:nrow(PROSTATE.CANCER), size = 65)
+devq5 <- PROSTATE.CANCER[sample.ind,]
+holdoutq5 <- PROSTATE.CANCER[-sample.ind,]
+pr3<-lm(Y~X1+X2+X3+X4+X5+X6+X7,data=devq5)
+ols_step_both_p(pr3,prem=0.05,details=TRUE)
+k1<-ols_step_best_subset(pr3)
+plot(k1)
+
+pr31<-lm(Y~X1+X5,data=devq5)
+summary(pr31)
+```
+
+b-) Perform appropriate diagnostic checks to evaluate outliers and assess their influence.
+
+The model is significant with 54% R-Square. QQ plot show problem with the normal distribution. Residual vs Fitted graph shows a megaphone shape indicating un equal variances. Cook's distance graph show that observation 33 and 8 are influential points. Observations 33,61,8, and 44 are outliers.  
+
+```{r}
+
+influence.measures(pr31)
+par(mfrow=c(2,2))
+plot(pr31)
+vif(pr31)
+ols_plot_cooksd_chart(pr31)
+ols_plot_resid_stud_fit(pr31)
+```
+
+
+c-)	Fit the regression model identified in part a to the validation data set. Compare the estimated regression coefficients and their estimated standard errors with those obtained in part a. Also compare the error mean square and coefficients of multiple determination. Does the model fitted to the validation data set yield similar estimates as the model fitted to the model-building data set? 
+
+
+Capsular.penetration ($X_6$) becomes insignificant and Rsquare decreases. MSE increased from 776 to  1149.8.Indicating problem with the model stability. 
+
+```{r}
+
+f31<-lm(Y~X1+X6,data=holdoutq5)
+summary(f31)
+anova(f31)
+anova(pr31)
+MSPR<-sum(f31$residuals^2)/length(f31$residuals)
+MSPR
+```
+
+d-) Calculate the mean squared prediction error  and compare it to MSE obtained from the model-building data set. Is there evidence of a substantial bias problem in MSE here?
+
+MSPR=1042.05 and MSE=776.Indicating problem with the model stability. 
+
+```{r}
+MSPR<-sum(f31$residuals^2)/length(f31$residuals)
+MSPR
+```

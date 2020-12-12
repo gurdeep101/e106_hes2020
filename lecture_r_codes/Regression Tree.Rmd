@@ -1,0 +1,90 @@
+---
+title: "Regression Tree"
+author: "Hakan Gogtas"
+date: "11/29/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+wine<- read.csv("/cloud/project/whitewines.csv")
+str(wine)
+head(wine ,10)
+hist(wine$quality)
+```
+
+The wine quality values appear to follow a fairly normal, bell-shaped distribution, centered around a value of six. 
+This makes sense intuitively, because most wines are of average quality; few are particularly bad or good. 
+
+```{r}
+summary(wine)
+```
+
+There are outliers in the data. Even though trees are fairly robust to messy data, it is always prudent to check for severe problems. For now, we'll assume that the data is reliable.
+
+
+```{r}
+#lets do 70 and 30 split
+set.seed(1023)
+sample_ind<-sample(nrow(wine),round(0.7*nrow(wine)))
+wine_train <- wine[sample_ind, ]
+wine_test <- wine[-sample_ind, ]
+
+#install.packages("rpart") 
+library(rpart)
+m.rpart <- rpart(quality ~ ., data = wine_train)
+m.rpart
+```
+
+
+For each node in the tree, the number of examples reaching the decision point is listed. For instance, all 3,429 examples begin at the root node, of which 2,155 have alcohol < 10.85 and 1,274 have alcohol >= 10.85. Because alcohol was used first in the tree,it is the single most important predictor of wine quality.
+
+Nodes indicated by * are terminal or leaf nodes, which means that they result in a prediction (listed here as yval). 
+For example, node 4 has a yval of 5.367. When the tree is used for predictions, any wine samples with alcohol < 10.85 and 
+
+volatile.acidity < 0.2525 would therefore be predicted to have a quality value of 5.367.
+```{r}
+library(rpart.plot)
+rpart.plot(m.rpart, digits = 3)
+```
+
+The fallen.leaves parameter forces the leaf nodes to be aligned at the bottom of the plot, while the type and extra parameters affect the way the decisions and nodes are labeled. 
+
+The numbers 3 and 101 refer to specific style formats, which can be found in the command's documentation, 
+or via experimentation with various numbers.
+
+```{r}
+rpart.plot(m.rpart, digits = 4, fallen.leaves = TRUE,type = 3, extra = 101)
+
+#evaluating model performance
+p.rpart <- predict(m.rpart, wine_test)
+summary(p.rpart)
+summary(wine_test$quality)
+cor(p.rpart, wine_test$quality)
+```
+
+
+
+A correlation of 0.53 is certainly acceptable. However, the correlation only measures how strongly the 
+predictions are related to the true value; it is not a measure of how far off the predictions were from 
+the true values.
+
+```{r}
+#Measuring performance with the mean absolute error
+MAE <- function(actual, predicted) {mean(abs(actual - predicted))}
+
+#The MAE for our predictions is then:
+MAE(wine_test$quality,p.rpart)
+#Measuring performance with the SSE
+SSE <- function(actual, predicted) {sum((actual - predicted)^2)}
+SSE(wine_test$quality,p.rpart)
+#Measuring performance with the RSquare
+R2 <- function(actual, predicted) {sum((actual - predicted)^2)/((length(actual)-1)*var(actual))}
+1-R2(wine_test$quality,p.rpart)
+```
+
+
+

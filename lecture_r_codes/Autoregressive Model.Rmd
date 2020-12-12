@@ -1,0 +1,148 @@
+---
+title: "Autoregressive  Model"
+author: "Hakan Gogtas"
+date: "11/29/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Autoregressive Model
+
+Durbin Watson Test for the auto correlation:
+
+$H_o$: $\rho$ = 0
+$H_a$: $\rho$ > 0   
+
+Use the lmtest library for the Durbin Watson test.
+```{r}
+Blaisdell <- read.csv("/cloud/project/Blaisdell.csv")
+library(lmtest)
+dwtest(Company.Sales~Industry.Sales,data=Blaisdell)
+
+#library(nlme)
+#glmod <- gls(Company.Sales~Industry.Sales,correlation=corAR1(form=~Quarter),data=Blaisdell)
+#summary(glmod)
+#intervals(glmod,which="var-cov")
+
+```
+
+#Cocharane-Orcutt Procedure
+
+
+```{r}
+library(Hmisc)
+#lets do it manually
+f<-lm(Company.Sales~Industry.Sales,data=Blaisdell)
+et<-f$residuals
+et1<-Lag(et, shift = 1)
+
+d1<-sum(na.omit(et1*et))
+d2<-sum(na.omit(et1)^2) 
+rho<-d1/d2
+
+Ytnew=Blaisdell$Company.Sales - rho*Lag(Blaisdell$Company.Sales, shift = 1)
+Xtnew=Blaisdell$Industry.Sales - rho*Lag(Blaisdell$Industry.Sales, shift = 1)
+
+f1<-lm(Ytnew~Xtnew)
+summary(f1)
+dwtest(Ytnew~Xtnew)
+#building function uses Spearman's rho autocorrelation
+library(orcutt)
+#coch<- cochrane.orcutt(f)
+#summary(coch)
+#it did not converge, changing the convergence criteria to (4th decimal)
+coch1<-cochrane.orcutt(f,convergence = 4, max.iter=100)
+summary(coch1)
+```
+
+## Hildreth-Lu
+
+```{r}
+library(HoRM)
+prg1<-function(x,y,rh){
+n<-length(rh)
+out<-matrix(0,nrow=n,ncol=2)
+out[,1]<-rh
+for (i in 1:n){
+d<-anova(hildreth.lu(y=y,x=x,rho=rh[i]))
+out[i,2]<-d$"Sum Sq"[2]
+}
+out
+}
+rh<-seq(0.1,1,by=0.01)
+hl<-prg1(Blaisdell$Company.Sales,x=Blaisdell$Industry.Sales,rh)
+which.min(hl[,2])
+hl[87,]
+```
+
+## First Difference
+
+```{r}
+rho=1
+Ytnew=Blaisdell$Company.Sales - rho*Lag(Blaisdell$Company.Sales, shift = 1)
+Xtnew=Blaisdell$Industry.Sales - rho*Lag(Blaisdell$Industry.Sales, shift = 1)
+
+mean(Blaisdell$Company.Sales)-mean(Blaisdell$Industry.Sales)*0.168488
+f1<-lm(Ytnew~Xtnew -1)
+summary(f1)
+dwtest(f1)
+
+```
+## prediction for the Cochrane-Orcutt model
+
+```{r}
+f<-lm(Company.Sales~Industry.Sales,data=Blaisdell)
+et<-f$residuals
+et1<-Lag(et, shift = 1)
+
+d1<-sum(na.omit(et1*et))
+d2<-sum(na.omit(et1)^2) 
+rho<-d1/d2
+
+Ytnew=Blaisdell$Company.Sales - rho*Lag(Blaisdell$Company.Sales, shift = 1)
+Xtnew=Blaisdell$Industry.Sales - rho*Lag(Blaisdell$Industry.Sales, shift = 1)
+
+f1<-lm(Ytnew~Xtnew)
+MSE<-summary(f1)$sigma^2
+
+#transforming the coeficents back to original form
+b0 <- summary(f1)[[4]][1,1]/(1-rho); print(b0)
+s.b0 <- summary(f1)[[4]][1,2]/(1-rho)
+b1 <- summary(f1)[[4]][2,1]; print(b1)
+s.b1 <- summary(f1)[[4]][2,2]
+correct.y.hats <- b0 + b1*Blaisdell$Company.Sales
+MSE<-summary(f1)$sigma^2
+
+
+X.prime<-Xtnew
+X.bar.prime <- mean(X.prime[-1])
+
+X.n.plus.1 <- 175.3
+X.n <- rev(Blaisdell$Industry.Sales)[1]
+X.n.plus.1.prime <- X.n.plus.1 - rho*X.n
+
+# Point forecast:
+
+Y.hat.n.plus.1 <- b0 + b1*X.n.plus.1
+Y.n <- rev(Blaisdell$Industry.Sales)[1]
+e.n <- Y.n - (b0 + b1*X.n)
+Y.hat.FORECAST.n.plus.1 <- Y.hat.n.plus.1 + rho*e.n
+
+print(paste("forecasted response at time n+1 is:", round(Y.hat.FORECAST.n.plus.1,4) ))
+
+# Prediction interval:
+
+alpha <- 0.05
+n<-length(Blaisdell$Company.Sales)
+s.pred <- sqrt(MSE*(1 + (1/n) + (X.n.plus.1.prime -X.bar.prime)^2/(sum((X.prime[-1]-X.bar.prime)^2))))
+s.pred
+pred.L <- Y.hat.FORECAST.n.plus.1 - qt(1-alpha/2,df=n-3)*s.pred
+pred.U <- Y.hat.FORECAST.n.plus.1 + qt(1-alpha/2,df=n-3)*s.pred
+
+
+print(paste(100*(1-alpha) ,"percent PI for response at time n+1 is:", round(pred.L,4), ",", round(pred.U,4) ))
+```
+

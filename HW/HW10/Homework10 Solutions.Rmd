@@ -1,0 +1,441 @@
+---
+title: 'CSCI E-106:Assignment 10'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(pander)
+library(rmarkdown)
+library(markdown)
+```
+
+### Due Date: December 7, 2020 at 7:20 pm EST
+### Instructions
+
+Students should submit their reports on Canvas. The report needs to clearly state what question is being solved, step-by-step walk-through solutions, and final answers clearly indicated. Please solve by hand where appropriate.
+
+Please submit two files: (1) a R Markdown file (.Rmd extension) and (2) a PDF document, word, or html generated using knitr for the .Rmd file submitted in (1) where appropriate. Please, use RStudio Cloud for your solutions.
+
+----------------------------------------------------
+
+
+## Problem 1
+
+Refer to the Cement Composition Data. The variables collected were the amount of tricalcium aluminate
+($X_1$), the amount of tricalcium silicate ($X_2$), the amount of tetracalcium alumino ferrite
+($X_3$), the amount of dicalcium silicate ($X_4$), and the heat evolved in calories per gram of
+cement (Y). (25 points, 5 points each)
+
+
+a -) Fit regression model for four predictor variables to the data. State the estimated
+regression function. (5 pt)
+
+```{r}
+Cement <- read.csv("/cloud/project/Cement Composition.csv")
+round(cor(Cement),2)
+f<-lm(Y~.,data=Cement)
+```
+
+`r {pander(summary(f))}`
+
+No variables are significant. R Square is 97%. $X_1$ is highly correlated with $X_3$.
+
+b-) Fit a ridge regression model and find the best $\lambda$. Please see below.
+```{r}
+library(glmnet)
+x <- model.matrix(Y~., Cement)[,-c(1)]
+y <- Cement$Y
+RidgeMod <- glmnet(x, y, alpha=0, nlambda=100,lambda.min.ratio=0.0001)
+#if you have a hold sample, repeat above to create x and y.
+CvRidgeMod <- cv.glmnet(x, y, alpha=0, nlambda=100,lambda.min.ratio=0.0001)
+par(mfrow=c(1,1))
+plot(CvRidgeMod)
+best.lambda.ridge <- CvRidgeMod$lambda.min
+best.lambda.ridge 
+coef(RidgeMod,s=best.lambda.ridge)
+```
+
+
+c-) See Below 
+
+```{r}
+LassoMod <- glmnet(x, y, alpha=1, nlambda=100,lambda.min.ratio=0.0001)
+plot(LassoMod,xvar="norm",label=TRUE)
+CvLassoMod <- cv.glmnet(x, y, alpha=1, nlambda=100,lambda.min.ratio=0.0001)
+plot(CvLassoMod)
+best.lambda.lasso <- CvLassoMod$lambda.min
+best.lambda.lasso
+coef(CvLassoMod, s = "lambda.min")
+```
+
+
+d-) See Below
+
+```{r}
+EnetMod <- glmnet(x, y, alpha=0.5, nlambda=100,lambda.min.ratio=0.0001)
+CvElasticnetMod <- cv.glmnet(x, y,alpha=0.5,nlambda=100,lambda.min.ratio=0.0001)
+best.lambda.enet <- CvElasticnetMod$lambda.min
+best.lambda.enet
+coef(CvElasticnetMod, s = "lambda.min")
+```
+
+
+e-) Lasso and Elastic Net are very close to each other, almost similar SSE and $R^2$. I would chooice Lasso since it has a simpler form.
+
+
+
+```{r}
+
+y_hat.ridge <- predict(RidgeMod, s = best.lambda.ridge, newx = x)
+y_hat.lasso <- predict(LassoMod, s = best.lambda.lasso, newx = x)
+y_hat.enet <- predict(CvElasticnetMod , s = best.lambda.enet, newx = x)
+sst <- sum((y - mean(y))^2)
+sse.ols<-sum(f$residuals^2)
+sse.ridge <- sum((y-y_hat.ridge)^2)
+sse.lasso <- sum((y-y_hat.lasso)^2)
+sse.enet <- sum((y-y_hat.enet)^2)
+cbind(sse.ols,sse.ridge,sse.lasso,sse.enet)
+# R squared
+rsq.ols<-1 - sse.ols / sst
+rsq.ridge <- 1 - sse.ridge / sst
+rsq.lasso <- 1 - sse.lasso / sst
+rsq.enet  <- 1 - sse.enet  / sst
+cbind(rsq.ols,rsq.ridge,rsq.lasso,rsq.enet)
+```
+
+
+
+## Problem 2
+
+Refer to the Prostate cancer data set in the problem 3 in the Homework 9. Select a random
+sample of 65 observations to use as the model-building data set. (15 points, 5 each)
+
+
+a-) Develop a regression tree for predicting PSA. Justify your choice of number of regions
+(tree size), and interpret your regression tree.
+
+```{r}
+PC.Dat <- read.csv("/cloud/project/Prostate Cancer.csv")
+set.seed(567)
+IND=sample(1:nrow(PC.Dat), size = 65)
+PC.Dev=PC.Dat[IND,]
+PC.Hold=PC.Dat[-IND,]
+library(rpart)
+m.rpart <- rpart(PSA.level ~ ., data = PC.Dev)
+m.rpart
+library(rpart.plot)
+rpart.plot(m.rpart, digits = 3)
+```
+
+b-) Assess your model's ability to predict and discuss its usefulness to the oncologists. 
+See below
+
+```{r}
+p.rpart <- predict(m.rpart, PC.Hold)
+cor(p.rpart,PC.Hold$PSA.level)
+
+#Measuring performance with the SSE
+SSE <- function(actual, predicted) {sum((actual - predicted)^2)}
+SSE(PC.Hold$PSA.level,p.rpart)
+#Measuring performance with the RSquare
+R2 <- function(actual, predicted) {sum((actual - predicted)^2)/((length(actual)-1)*var(actual))}
+1-R2(PC.Hold$PSA.level,p.rpart)
+```
+
+c-) Compare the performance of your regression tree model with that of the best regression
+model obtained in the problem 3 in the Homework 9. Which model is more easily interpreted and why?
+
+Regression model has two variables. Tree is using one variable. $R^2$ for Tree is 43% and $R^2$ for regression model is 17%. Tree outperformed the regression model. In terms of interpretation, both models are equally transparent. 
+```{r}
+r.reg<-lm(PSA.level~Cancer.volume+Capsular.penetration,data=PC.Dev)
+summary(r.reg)
+
+p.reg <- predict(r.reg, PC.Hold)
+cor(p.reg,PC.Hold$PSA.level)
+
+#Measuring performance with the SSE
+SSE(PC.Hold$PSA.level,p.reg)
+#Measuring performance with the RSquare
+1-R2(PC.Hold$PSA.level,p.reg)
+
+
+```
+
+
+## Problem 3 
+
+Refer to the Prostate cancer data set in the problem 3 in the Homework 9. Select a random
+sample of 65 observations to use as the model-building data set. (15 points, 5 each)
+
+a-) Develop a neural network model for predicting PSA. Justify your choice of number of
+hidden nodes and penalty function weight and interpret your model.
+
+See below, $R^2$ is 97%.
+```{r}
+library(neuralnet)
+normalize <- function(x) {return((x - min(x)) / (max(x) - min(x)))}
+scaled.PC.Dat <- as.data.frame(lapply(PC.Dat, normalize))
+scaled.PC.Dev<- scaled.PC.Dat[IND,]
+scaled.PC.Hold<- scaled.PC.Dat[-IND,]
+
+PC.Dev=PC.Dat[IND,]
+PC.Hold=PC.Dat[-IND,]
+
+#we are trying 2 hidden layers with 5 notes
+NN = neuralnet(PSA.level~.,hidden=c(5,5), scaled.PC.Dev,linear.output= T ) 
+
+plot(NN)
+#need to take out Y
+predict_testNN= compute(NN, scaled.PC.Dev[,-c(1)])
+#we need to transform it back to orginal scale
+predict_testNN1 = (predict_testNN$net.result*(max(PC.Dat$PSA.level) -min(PC.Dat$PSA.level))) + min(PC.Dat$PSA.level)
+1-R2(PC.Dev$PSA.level,predict_testNN1)
+plot(PC.Dev$PSA.level, predict_testNN1, col='blue', pch=16, ylab= "Predicted PSA Level", xlab= "Actual Y")
+```
+
+b-) Assess your model's ability to predict and discuss its usefulness to the oncologists. See below, Out o
+
+b-) Out of model performance is so bad. We overfitted the model.
+
+```{r}
+nn.predict= compute(NN, scaled.PC.Hold[,-c(1)])
+#we need to transform it back to orginal scale
+nn.predict1 = (nn.predict$net.result*(max(PC.Dat$PSA.level) -min(PC.Dat$PSA.level))) + min(PC.Dat$PSA.level)
+
+#R Squares
+1-R2(PC.Hold$PSA.level,nn.predict1)
+
+#SSE
+SSE(PC.Hold$PSA.level,nn.predict1)
+
+
+```
+
+
+c-)  Compare the performance of your neural network model with that of the best regression
+model obtained in the problem 3 in the Homework 9. Which model is more easily interpreted and why?
+
+Regression model performs better than Neuron Network model.
+
+## Problem 4
+ 
+Refer to the Advertising Agency Data. Monthly data on amount of billings (Y, in thousands of constant dollars) and on number of hours of staff time (X, in thousand hours) for the 20 most recent months follow. A simple linear regression model is believed to be appropriate. but positively autocorrelated error terms may be present. (20 points 5 each)
+
+a-) Fit a simple linear regression model by ordinary least squares and obtain the residuals.  Conduct a formal test for positive autocorrelation using $\alpha$ = .01. 
+
+The model is significant, $R^2$ is almost 100%.
+
+Ho:$\rho$=0
+Ha:$\rho$>0
+
+Reject null, there is an autocorrelation in the data.
+```{r}
+AA.Dat <- read.csv("/cloud/project/Advertising Agency.csv")
+m.q4<-lm(Y~X,data=AA.Dat)
+summary(m.q4)
+library(lmtest)
+dwtest(m.q4)
+```
+
+b-) Use a Cochrane-Orcutt procedure to estimate the model and test if the autocorrelation remains after the first iteration
+
+After the first iteration, the autocorrelation is no longer present.
+```{r}
+
+#manual solution
+library(Hmisc)
+et<-m.q4$residuals
+et1<-Lag(et, shift = 1)
+
+d1<-sum(na.omit(et1*et))
+d2<-sum(na.omit(et1)^2) 
+rho<-d1/d2
+
+Ytnew=AA.Dat$Y - rho*Lag(AA.Dat$Y , shift = 1)
+Xtnew=AA.Dat$X - rho*Lag(AA.Dat$X , shift = 1)
+
+f1<-lm(Ytnew~Xtnew)
+summary(f1)
+dwtest(Ytnew~Xtnew)
+#use the function
+library(orcutt)
+coch<- cochrane.orcutt(m.q4)
+summary(coch)
+```
+
+
+c-) Restate the estimated regression function obtained in part (b) in terms of the original variables. Also obtain $s(b_0)$ and $s(b_1)$. Compare the estimated regression coefficients obtained.
+
+Please see below for the coefficients and $s(b_0)$ and $s(b_1)$. The new model is
+$Y=94.87257+75.65823X$
+```{r}
+#transforming the coefficients back to original form
+b0 <- summary(f1)[[4]][1,1]/(1-rho); print(b0)
+s.b0 <- summary(f1)[[4]][1,2]/(1-rho)
+b1 <- summary(f1)[[4]][2,1]; print(b1)
+s.b1 <- summary(f1)[[4]][2,2]
+correct.y.hats <- b0 + b1*AA.Dat$X
+MSE<-summary(f1)$sigma^2
+```
+
+
+d-)Staff time in month 21 is expected to be 3.625 thousand hours. Predict the amount of
+billings in constant dollars for month 21, using a 99 percent prediction intervaL Interpret your interval.
+
+```{r}
+X.prime<-Xtnew
+X.bar.prime <- mean(X.prime[-1])
+
+X.n.plus.1 <- 3.625
+X.n <- rev(AA.Dat$X)[1]
+X.n.plus.1.prime <- X.n.plus.1 - rho*X.n
+
+# Point forecast:
+
+Y.hat.n.plus.1 <- b0 + b1*X.n.plus.1
+Y.n <- rev(AA.Dat$X)[1]
+e.n <- Y.n - (b0 + b1*X.n)
+Y.hat.FORECAST.n.plus.1 <- Y.hat.n.plus.1 + rho*e.n
+
+print(paste("forecasted response at time n+1 is:", round(Y.hat.FORECAST.n.plus.1,4) ))
+
+# Prediction interval:
+
+alpha <- 0.01
+n<-length(AA.Dat$X)
+s.pred <- sqrt(MSE*(1 + (1/n) + (X.n.plus.1.prime -X.bar.prime)^2/(sum((X.prime[-1]-X.bar.prime)^2))))
+s.pred
+pred.L <- Y.hat.FORECAST.n.plus.1 - qt(1-alpha/2,df=n-3)*s.pred
+pred.U <- Y.hat.FORECAST.n.plus.1 + qt(1-alpha/2,df=n-3)*s.pred
+
+print(paste(100*(1-alpha) ,"percent PI for response at time n+1 is:", round(pred.L,4), ",", round(pred.U,4) ))
+```
+
+
+
+## Problem 5
+
+Refer to the Advertising Agency Data and Problem 4. (25 points, 5 points each)
+
+
+a-) Use the Hildreth-Lu procedure to obtain a point estimate of the autocorrelation parameter. Do a search at the values $\rho$ = .1, .2, ... , 1.0 and select from these the value of $\rho$ that minimizes SSE. Based on your model, obtain an estimate of the transformed regression function. 
+
+$\rho$=0.4 gives the lowest SSE which is 3.485. 
+the model is $Y=95.0676+50.49249X$.
+```{r}
+library(HoRM)
+prg1<-function(x,y,rh){
+n<-length(rh)
+out<-matrix(0,nrow=n,ncol=2)
+out[,1]<-rh
+for (i in 1:n){
+d<-anova(hildreth.lu(y=y,x=x,rho=rh[i]))
+out[i,2]<-d$"Sum Sq"[2]
+}
+out
+}
+rh<-seq(0.1,1,by=0.1)
+hl<-prg1(AA.Dat$X,AA.Dat$Y,rh)
+hl[which.min(hl[,2]),]
+
+rho=0.4
+Ytnew=AA.Dat$Y - rho*Lag(AA.Dat$Y , shift = 1)
+Xtnew=AA.Dat$X - rho*Lag(AA.Dat$X , shift = 1)
+
+f2<-lm(Ytnew~Xtnew)
+#transforming the coefficients back to original form
+b0 <- summary(f2)[[4]][1,1]/(1-rho); print(b0)
+b1 <- summary(f2)[[4]][2,1]; print(b1)
+```
+
+
+b-) Use the first difference procedure to obtain a point estimate of the autocorrelation parameter.Based on your model, obtain an estimate of the transformed regression function. 
+
+the model is $Y=94.71167+50.16414X$.
+```{r}
+rho=1
+Ytnew=AA.Dat$Y - rho*Lag(AA.Dat$Y , shift = 1)
+Xtnew=AA.Dat$X - rho*Lag(AA.Dat$X , shift = 1)
+
+f3<-lm(Ytnew~Xtnew -1)
+summary(f3)
+
+b0 <- mean(AA.Dat$Y)-mean(AA.Dat$X)*summary(f3)[[4]][1,1]; print(b0)
+b1 <- summary(f3)[[4]][1,1]; print(b1)
+
+
+```
+
+
+c-) Test whether any positive autocorrelation remains in the transformed regression model for both part a and b; use $\alpha$ = .01. State the alternatives, decision rule, and conclusion.
+
+No autocorrelation was detected for both models, please see below. 
+
+```{r}
+#Hildreth-Lu procedure
+rho=0.4
+Ytnew=AA.Dat$Y - rho*Lag(AA.Dat$Y , shift = 1)
+Xtnew=AA.Dat$X - rho*Lag(AA.Dat$X , shift = 1)
+
+f2<-lm(Ytnew~Xtnew)
+dwtest(f2)
+
+#first difference
+
+rho=1
+Ytnew=AA.Dat$Y - rho*Lag(AA.Dat$Y , shift = 1)
+Xtnew=AA.Dat$X - rho*Lag(AA.Dat$X , shift = 1)
+f4<-lm(Ytnew~Xtnew)
+dwtest(f4)
+```
+
+
+d-) Which method would you choose? Explain your rationale.
+
+Hildreth-Lu procedure has the smallest MSE, it is a better approach.
+
+```{r}
+MSE.HL<-summary(f2)$sigma^2
+MSE.FD<-summary(f3)$sigma^2
+cbind(MSE.HL,MSE.FD)
+```
+
+e-) For the selected model in part d. Staff time in month 21 is expected to be 3.625 thousand hours. Predict the amount of billings in constant dollars for month 21, using a 99 percent prediction interval. Interpret your interval.
+
+See below
+```{r}
+rho=0.4
+X.prime<-Xtnew
+X.bar.prime <- mean(X.prime[-1])
+
+X.n.plus.1 <- 3.625
+X.n <- rev(AA.Dat$X)[1]
+X.n.plus.1.prime <- X.n.plus.1 - rho*X.n
+
+# Point forecast:
+
+Y.hat.n.plus.1 <- b0 + b1*X.n.plus.1
+Y.n <- rev(AA.Dat$X)[1]
+e.n <- Y.n - (b0 + b1*X.n)
+Y.hat.FORECAST.n.plus.1 <- Y.hat.n.plus.1 + rho*e.n
+
+print(paste("forecasted response at time n+1 is:", round(Y.hat.FORECAST.n.plus.1,4) ))
+
+# Prediction interval:
+
+alpha <- 0.01
+n<-length(AA.Dat$X)
+s.pred <- sqrt(MSE*(1 + (1/n) + (X.n.plus.1.prime -X.bar.prime)^2/(sum((X.prime[-1]-X.bar.prime)^2))))
+s.pred
+pred.L <- Y.hat.FORECAST.n.plus.1 - qt(1-alpha/2,df=n-3)*s.pred
+pred.U <- Y.hat.FORECAST.n.plus.1 + qt(1-alpha/2,df=n-3)*s.pred
+
+print(paste(100*(1-alpha) ,"percent PI for response at time n+1 is:", round(pred.L,4), ",", round(pred.U,4) ))
+```
+
+

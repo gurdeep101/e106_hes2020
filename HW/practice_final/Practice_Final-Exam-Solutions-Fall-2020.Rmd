@@ -1,0 +1,461 @@
+---
+title: 'Practice Final Exam'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Instructions
+
+Open book and open notes exam ( textbooks (print or pdf), lecture slides, notes, practice exam, homework solutions, and TA slides, including all Rmd's*).
+
+You are allowed to use RStudio Cloud (https://rstudio.cloud.) , Microsoft Word, Power Point and PDF reader, and canvas on your laptop.
+
+Proctorio is required to start this exam. If you are prompted for an access code, you must Configure Proctorio  on your machine. 
+
+Please read the list of recording and restrictions provided by Proctorio carefully before taking the exam 
+
+Please pay attention any timing and technical warnings that popped up your screen 
+
+The exam will be available from Monday December 14th at 8 am EST through Tuesday December 15th at 8:00pm EST.
+Once you start the exam, you have to complete the exam in 3 hours or by Tuesday December 15th at 8:00pm EST, whichever comes first.
+
+In order to receive full credit, please provide full explanations and calculations for each questions 
+
+Make sure that you are familiar with the procedures for troubleshooting exam issues Preview the document
+Make sure you submit both .Rmd and (knitted) pdf or html files.
+
+
+You need to have a camera on your laptop.
+
+----------------------------------------------------
+
+
+## Problem 1
+
+Use the question1 data, fit the regression model on Y by using all the variables (X6 and X7 are categorical variables). Create development sample (70% of the data) and hold-out sample (30% of the data).  Perform statistical tests, use graphs or calculate the measures (e.g. VIF, Leverage Points, Cook’s Distance) for questions below. Use the development sample for part a to d. Use the hold-out sample for part e. Use seed 1234.
+  
+a-) Is the model significant? Is there a Multicollinearity in the data? Are the errors Normally distributed with constant variance?
+
+$X_8$ is significantly correlated with $X_9$ and $X_{10}$ 
+
+$X_1$, $X_2$, $X_7$, $X_8$, and $X_9$ are significant variables. $R^2$ is 70%. QQ plot indicates S function and suggests that Y should be transformed. Errors have constant variance. There are outliers in the data set. There is a multicollinearity issue in the data set. $X_8$ should be dropped from the model.
+
+```{r}
+
+library(datasets)
+
+
+PF.Q1.Dat <- read.csv("/cloud/project/Practice Final Question 1.csv")
+round(cor(PF.Q1.Dat),2)
+
+RNGversion("3.5.2")
+
+set.seed(994)
+
+n<-dim(PF.Q1.Dat)[1]
+#dummy variables
+table(PF.Q1.Dat$X6)
+table(PF.Q1.Dat$X7)
+#X7 gas 4 levels and need to create dummy variables or use factor command
+#creating the dummy variables
+library('fastDummies')
+Q1.Dat<-dummy_cols(PF.Q1.Dat, select_columns = 'X6')
+Q1.Dat<-dummy_cols(Q1.Dat, select_columns = 'X7')
+#this will create dummy variables for all levels, but we need to drop one level and drop X6 and X7
+Q1.Dat<-Q1.Dat[,-c(7,8,12,14)]
+head(Q1.Dat)
+IND=sample(c(1:n),n*0.7)
+Q1.Dev<-Q1.Dat[IND,]
+Q1.Hold<-Q1.Dat[-IND,]
+
+f1<-lm(Y~ X1+X2+X3+X4+X5+X6_2+X7_2+X7_3+X7_4+X8+X9+X10 ,data=Q1.Dev)
+
+
+summary(f1)
+par(mfrow=c(2,2))
+plot(f1)
+
+library(olsrr)
+ols_plot_cooksd_bar(f1)
+ols_plot_resid_lev(f1)
+ols_plot_resid_stud_fit(f1)
+library(faraway)
+vif(f1)
+```
+
+b-) Are there any influential or outlier observations? 
+
+Yes, based on the Cook's distance observations 6 and 31 are influential points.
+
+c-) Can X5, X6, and X7 be dropped from the model? Perform the statistical test and state your final model.
+
+Ho: Variables can be dropped
+Ha: Variables cannot be dropped
+
+Reject Ho. Variables cannot be dropped from the model.
+
+```{r}
+f1.r<-lm(Y~ X1+X2+X3+X4+X8+X9+X10,data=Q1.Dev)
+anova(f1.r,f1)
+```
+
+
+d-) Develop an alternative model by using the Regression Tree and compare the performance against the regression model built in part a. 
+
+In the hold out sample, regression model performs better than the tree method using R^2, it has also smallest SSE.
+
+```{r}
+library(rpart)
+q1.tr<-rpart(Y~.,data=Q1.Dev)
+library(rpart.plot)
+par(mfrow=c(1,1))
+rpart.plot(q1.tr,digits = 3)
+
+p.tree.dev<-predict(q1.tr,Q1.Dev)
+p.reg.dev<-predict(f1,Q1.Dev)
+
+#Measuring performance with the RSquare
+
+R2 <- function(actual, predicted) {sum((actual - predicted)^2)/((length(actual)-1)*var(actual))}
+R2(Q1.Dev$Y,p.tree.dev)
+
+cbind((1-R2(Q1.Dev$Y,p.tree.dev)),summary(f1)$adj.r.squared)
+
+#Measuring performance with the SSE
+SSE.Tree.Dev<-sum((predict(q1.tr)-Q1.Dev$Y)^2)
+SSE.Tree.Dev
+SSE.Reg.Dev<-anova(f1)$`Sum Sq`[length(anova(f1)$`Sum Sq`)]
+cbind(SSE.Tree.Dev,SSE.Reg.Dev)
+```
+
+
+f-) Score the model on hold-out sample and compare the results against the final model derived in part c.
+
+Since we are comparing two models on the hold out sample. We can use SSE as a measure to compare both models.
+The regresssion has the smallest SSE and has to be chosen.
+
+
+```{r}
+p.tree.hold<-predict(q1.tr,Q1.Hold)
+p.reg.hold<-predict(f1,Q1.Hold)
+
+
+#Measuring performance with the SSE
+SSE.Tree.Hold<-sum((p.tree.hold-Q1.Hold$Y)^2)
+SSE.Reg.Hold<-sum((p.reg.hold-Q1.Hold$Y)^2)
+cbind(SSE.Tree.Hold,SSE.Reg.Hold)
+```
+
+## Problem 2
+
+Use the question2 data set to answer this question. We are interested in predicting  (Y) the number of customers who complained about the service.
+ 
+a-) Build a model to predict the number of complaints, perform the statistical tests that shows that model is significant
+
+It is a poisson regression model since the dependent variable is a count data. All variables and model are significant.
+
+```{r}
+PF.Q2.Dat <- read.csv("/cloud/project/Practice Final Question 2.csv")
+f2<-glm(Y~.,data=PF.Q2.Dat,family=poisson)
+summary(f2)
+```
+
+
+
+b-)   Find the predicted number complaints given the independent variables below and predict 95% confidence interval
+
+X1=606 X2=41393	X3=3	X4=3.04	X5=6.32
+
+Please see below
+```{r}
+test.dat<-data.frame(X1=606,X2=41393,X3=3,X4=3.04,X5=6.32)
+pred<-predict(f2,test.dat,type="link",se.fit = TRUE)
+
+exp(pred$fit)
+critval <- round(qnorm(1-.05/2),2)#1.96 approx 95% CI
+critval
+upr <- exp(pred$fit + (critval * pred$se.fit))
+lwr <- exp(pred$fit - (critval * pred$se.fit))
+cbind(lwr,upr)
+```
+## Problem 3 
+
+Use question 3 data sets. Monthly data on amount of billings (Y) and on number of hours of staff time (X) for the 20 most recent months are recorded.
+
+a-) Build a model to predict Y based on the independent variables and test if there is an autocorrelation persists in the data. If autocorrelation persists, remediate the autocorrelation. 
+
+There is autocorrelation in the data set. I will use Cochrane-Orcutt procedure to eliminate it. The suggested $\rho$ is 0.33 and autocorrelation is remediated. 
+
+```{r}
+PF.Q3.Dat <- read.csv("/cloud/project/Practice Final Question 3.csv")
+f3<-lm(Y~X,data=PF.Q3.Dat)
+summary(f3)
+library(lmtest)
+dwtest(f3)
+
+#manual solution
+library(Hmisc)
+et<-f3$residuals
+et1<-Lag(et, shift = 1)
+
+d1<-sum(na.omit(et1*et))
+d2<-sum(na.omit(et1)^2) 
+rho<-d1/d2
+
+Ytnew=PF.Q3.Dat$Y - rho*Lag(PF.Q3.Dat$Y , shift = 1)
+Xtnew=PF.Q3.Dat$X - rho*Lag(PF.Q3.Dat$X , shift = 1)
+
+f3.1<-lm(Ytnew~Xtnew)
+summary(f3.1)
+dwtest(f3.1)
+
+#Aletnatively
+#use the function
+library(orcutt)
+coch<- cochrane.orcutt(f3)
+summary(coch)
+
+
+```
+
+
+b-) X (Staff time) in month 21 is expected to be 3.625 thousand hours. Predict the amount of
+billings in constant dollars for month 21, using a 99 percent prediction intervaL Interpret
+your interval.
+
+```{r}
+b0 <- summary(f3.1)[[4]][1,1]/(1-rho)
+b1 <- summary(f3.1)[[4]][2,1] 
+MSE<-summary(f3.1)$sigma^2
+
+X.prime<-Xtnew
+X.bar.prime <- mean(X.prime[-1])
+
+X.n.plus.1 <- 3.625
+X.n <- rev(PF.Q3.Dat$X)[1]
+X.n.plus.1.prime <- X.n.plus.1 - rho*X.n
+
+# Point forecast:
+
+Y.hat.n.plus.1 <- b0 + b1*X.n.plus.1
+Y.n <- rev(PF.Q3.Dat$Y)[1]
+e.n <- Y.n - (b0 + b1*X.n)
+Y.hat.FORECAST.n.plus.1 <- Y.hat.n.plus.1 + rho*e.n
+
+print(paste("forecasted response at time n+1 is:", round(Y.hat.FORECAST.n.plus.1,4) ))
+
+# Prediction interval:
+
+alpha <- 0.01
+n<-length(PF.Q3.Dat$X)
+s.pred <- sqrt(MSE*(1 + (1/n) + (X.n.plus.1.prime -X.bar.prime)^2/(sum((X.prime[-1]-X.bar.prime)^2))))
+s.pred
+pred.L <- Y.hat.FORECAST.n.plus.1 - qt(1-alpha/2,df=n-3)*s.pred
+pred.U <- Y.hat.FORECAST.n.plus.1 + qt(1-alpha/2,df=n-3)*s.pred
+
+print(paste(100*(1-alpha) ,"percent PI for response at time n+1 is:", round(pred.L,4), ",", round(pred.U,4) ))
+```
+
+## Problem 4
+ 
+Use question 4 data set, Create development sample (70% of the data) and hold-out sample (30% of the data) use set.seed(1023) before creating the samples.
+
+ a-) Use the development sample , fit a linear regression model,  regression tree and  Neural Network Model, and calculate the SSE for each model, which method has the lowest SSE?
+
+Reg Model:
+$X_1$,$X_2$,$X_3$ and $X_4$  are significant and $R^2$ square is 56%. QQ plot indicates S shape suggesting that transformation is needed.  Residual vs Fitted graph suggest that furhter testing for unequal variances are needed. However, there is no multicolinearity in the data. SSE is 10128646733.
+
+Tree:
+It is based only 2 variables ($X_1$ and $X_2$). 
+
+Neural Network:
+
+I used 2 hidden layers with 5 nodes each, you can also try single layer or multiple layer.
+SSE  is 22389967988. It has the lowest SSE. Highest R^2
+```{r}
+PF.Q4.Dat<- read.csv("/cloud/project/Practice Final Question 4.csv")
+n<-dim(PF.Q4.Dat)[1]
+
+RNGversion("3.5.2")
+
+set.seed(1023)
+IND=sample(c(1:n),n*0.7)
+
+Q4.Dev<-PF.Q4.Dat[IND,]
+Q4.Hold<-PF.Q4.Dat[-IND,]
+
+#regression model
+f4<-lm(Y~X1+X2+X3+X4+X5,data=Q4.Dev)
+summary(f4)
+par(mfrow=c(2,2))
+plot(f4)
+vif(f4)
+a<-summary(f4)$adj.r.squared
+SSE.Reg.Dev<-anova(f4)$`Sum Sq`[length(anova(f4)$`Sum Sq`)]
+SSE.Reg.Dev
+summary(f4)
+
+#Tree
+library(rpart)
+q4.tr<-rpart(Y~X1+X2+X3+X4+X5,data=Q4.Dev)
+library(rpart.plot)
+par(mfrow=c(1,1))
+rpart.plot(q4.tr,digits = 3)
+#Measuring performance with the RSquare
+b<-R2(Q4.Dev$Y,predict(q4.tr))
+SSE.Tree.Dev<-sum((predict(q4.tr)-Q4.Dev$Y)^2)
+SSE.Tree.Dev
+#Neural Network
+#install.packages("neuralnet")
+library(neuralnet)
+normalize <- function(x) {return((x - min(x)) / (max(x) - min(x)))}
+scaled.Q4.Dat <- as.data.frame(lapply(PF.Q4.Dat, normalize))
+scaled.Q4.Dev<- scaled.Q4.Dat[IND,]
+scaled.Q4.Hold<- scaled.Q4.Dat[-IND,]
+
+NN = neuralnet(Y~X1+X2+X3+X4+X5,hidden=c(5,5),scaled.Q4.Dev,linear.output= T ) 
+plot(NN)
+predict_testNN= compute(NN, scaled.Q4.Dev[,-c(1)])
+#we need to transform it back to orginal scale
+predict_testNN1 = (predict_testNN$net.result* (max(PF.Q4.Dat$Y) -min(PF.Q4.Dat$Y))) + min(PF.Q4.Dat$Y)
+plot(scaled.Q4.Dev$Y, predict_testNN1, col='blue', pch=16, ylab= "Predicted Y", xlab= "Actual Y")
+#Measuring performance with the RSquare
+c<-R2(Q4.Dev$Y,predict_testNN1)
+SSE.NN.Dev<-sum((predict_testNN1-Q4.Dev$Y)^2)
+SSE.NN.Dev
+#Measuring performance in the Hold out sample with the RSquare criteria: a=regression, b=reg.tree and c=neural network method
+
+cbind(a,1-b,1-c)
+cbind(SSE.Reg.Dev,SSE.Tree.Dev,SSE.NN.Dev)
+#10,128,646,733   7,450,047,035   4,663,684,919
+```
+ 
+ 
+ b-) test the models performances on the hold out sample, which model would you choose?
+ 
+ NN has the lower SSE, I would choose the NN approach. It outperforms other models.
+```{r}
+SSE <- function(actual, predicted) {sum((actual - predicted)^2)}
+#Regression
+f4<-lm(Y~X1+X2+X3+X4+X5,data=Q4.Dev)
+reg.predict<-predict(f4,Q4.Hold)
+REG=SSE(Q4.Hold$Y,reg.predict)
+
+#Tree
+tree.predict<-predict(q4.tr,Q4.Hold)
+Tree=SSE(Q4.Hold$Y,tree.predict)
+
+#NN
+nn = neuralnet(Y~X1+X2+X3+X4+X5,hidden=c(5,5),scaled.Q4.Hold,linear.output= T ) 
+
+nn.predict<-compute(nn, scaled.Q4.Hold)
+nn.predict1 = (nn.predict$net.result*(max(PF.Q4.Dat$Y) -min(PF.Q4.Dat$Y))) + min(PF.Q4.Dat$Y)
+NN=SSE(Q4.Hold$Y,nn.predict1)
+
+cbind(REG,Tree,NN)
+
+#5,958,240,574 5,497,451,623 1,279,306,638
+```
+
+## Problem 5
+
+Use Question 5 dataset, Y is a dichotomous response variable and X2, X3, and X4 are categorical variables. 
+
+a-) Fit a regression model containing the predictor variables in first-order terms and interaction terms for all pairs of predictor variables on development sample. 
+
+Y  is a dichotomous response variable. Therefore, we will use logistic regression model. $X_2$ has 3 levels and other two categorical variables has two levels. $X_3$ is coded 1-2. $X_4$ is coded 0-1. We need to create two dummy variables for $X_2$ and change the levels of $X_3$ to 0-1. 
+
+Only $X_2$ is significant. Please see below
+
+
+```{r}
+PF.Q5.Dat<- read.csv("/cloud/project/Practice Final Question 5.csv")
+table(PF.Q5.Dat$X2)
+table(PF.Q5.Dat$X3)
+table(PF.Q5.Dat$X4)
+
+library('fastDummies')
+Q5.Dat<-dummy_cols(PF.Q5.Dat, select_columns = 'X2')
+Q5.Dat<-dummy_cols(Q5.Dat, select_columns = 'X3')
+
+head(Q5.Dat)
+#drop X2, X3,X2_1, and X3_1
+Q5.Dat1<-Q5.Dat[,-c(2,3,6,9)]
+head(Q5.Dat1)
+```
+## TO GET THE FULL FORMULA USE THE CODE BELOW. RUN THE CODE. CUT & PASTE THE RESULTS AND ADD THE "+" IN BETWEEN EACH TERM. HOWEVER THIS CODE WILL GIVE YOU ALL INTERACTIONS. SO YOU NEED TO MANUALLY DELETE ALL THE INTERACTIONS TERMS FOR THE DUMMY VARIABLES OF THE SAME VARIABLE (I.E. X2_2:X2_3) BEFORE RUNNING THE GLM.
+#ff<-lm(Y~.^2,data=Q5.Dat1)
+#ff
+```{r}
+f5<-glm(Y~X1+X4+X2_2+X2_3+X3_2+X1:X4+X1:X2_2+X1:X2_3+X1:X3_2+X4:X2_2+X4:X2_3+X4:X3_2+X2_2:X3_2+X2_3:X3_2,data=Q5.Dat1,family=binomial)
+f5
+```
+
+b-)Use the likelihood ratio test to determine whether all interaction terms can be dropped
+from the regression model; State the alternatives, full and reduced models, decision rule, and conclusion. 
+
+Ho: Variables can be dropped
+Ha: Variables cannot be dropped
+
+Accept Ho, all interaction terms can be dropped.
+
+
+```{r}
+f5r<-glm(Y~X1+X4+X2_2+X2_3+X3_2,data=Q5.Dat1,family=binomial)
+anova(f5r,f5, test="Chi")
+```
+
+
+c-)For logistic regression model in part (a), use backward elimination to decide which predictor
+variables can be dropped from the regression model.  Which variables are retained in the regression model?
+
+Please see below, all interaction terms, $X_4$ are dropped from the model. All variables are significant. 
+```{r}
+t0<-step(f5,direction="backward",trace=0)
+summary(t0)
+```
+
+
+d-) Conduct the Hosmer-Lemeshow goodness of fit test for the appropriateness of the logistic regression function by forming five groups. State the alternatives, decision rule, and conclusion. 
+
+Using the model in part C,
+Ho: Fit is good
+Ha: Fit is not good
+
+Accept null, the fit is good.
+```{r}
+library(ResourceSelection)
+hoslem.test(t0$y,fitted(t0),g=5)
+```
+
+
+e-) Make the prediction for the following two cases and calculate 95% confidence interval
+
+X1=(33,6) X2=(1,1) X3=(1,1) X4=(0,0)
+
+Please see below
+```{r}
+
+test.dat<-data.frame(X1=c(33,6),X2=c(1,1),X3=c(1,1),X4=c(0,0))
+#however we need to create dummy variables 
+
+test.dat<-data.frame(X1=c(33,6),X2_2=c(0,0),X2_3=c(0,0),X3_2=c(0,0),X4=c(0,0))
+#to install inv.logit function, we need to boot library
+library(boot)
+pred<-predict(t0,test.dat,type="link",se.fit = TRUE)
+
+inv.logit(pred$fit)
+critval <- round(qnorm(1-.05/2),2)#1.96 approx 95% CI
+critval
+upr <- inv.logit(pred$fit + (critval * pred$se.fit))
+lwr <- inv.logit(pred$fit - (critval * pred$se.fit))
+cbind(lwr,upr)
+
+```
+

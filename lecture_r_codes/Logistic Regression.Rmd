@@ -1,0 +1,106 @@
+---
+title: "Logistic Regression"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+Odds ratios are below, cigs variable is significant. 
+
+```{r}
+library(faraway)
+data(wcgs, package="faraway")
+lmod <- glm(chd ~ height + cigs, family = binomial, wcgs)
+summary(lmod)
+beta <- coef(lmod)
+```
+
+The Deviance is the deviance for the current model while the Null Deviance is the deviance for a model with no predictors and just an intercept term.
+
+ Null deviance: 1781.2 - Residual deviance: 1749.0 = 32
+
+This test statistic is asymptotically distributed  assuming that the smaller model is correct and the distributional assumptions hold.
+
+For example, we can compare the fitted model to the null model (which has no predictors) by considering the difference between the residual and null deviances. For the heart disease example, this difference is 32.2 on two degrees of freedom (one for each predictor). Hence, the p-value for the test of the hypothesis that at least one of the predictors is related to the response is:
+
+Ho: Variables are not important
+Ha: Variable are important
+
+```{r}
+1-pchisq(32.2, 2)
+```
+
+Since this value is so small, we are confident that there is some relationship between the predictors and the response. Reject Ho. Accept Ha. 
+
+We can say that the odds of heart disease increase by 2.6% with each additional inch in height and by 2.3% with each additional cigarette smoked per day. Note that $exp(x)$  $\approx$ 1+x for small values of x. We observe that  so the $\beta_2$= 2.3% increase in odds due to smoking a cigarette a day could have been quickly estimated from the original model output without further computation. This approximation is useful for quick intuitions.It is more natural to compute the effect of a pack a day (20 cigarettes):
+
+```{r}
+exp(beta[3])
+exp(beta[3]*20)
+```
+So we have 59% increase in the odds of heart disease due to smoking.
+
+The model is significant based on the anova table above.
+Can we drop height?
+
+Ho: Height can be dropped
+Ha: Height can not be dropped.
+```{r}
+anova(lmod, test="Chi")
+
+lmodc <- glm(chd ~ cigs, family = binomial, wcgs)
+anova(lmodc,lmod, test="Chi")
+#alternatively
+drop1(lmod,test="Chi")
+lmode <- glm(chd ~ height, family = binomial, wcgs)
+anova(lmode,lmod, test="Chi")
+
+```
+
+Accept Ho. Yes, height can  be dropped from the model.
+95% confidence intervals for the coefficients
+
+```{r}
+confint(lmod)
+exp(confint(lmod))
+```
+    Doing Prediction:
+    
+```{r}
+test<-data.frame(cbind(height=72,cigs=0))
+predict(lmod,test,type="response",se.fit=TRUE)
+```
+    
+Goodness of Fit Test:
+
+Ho: The model is a good fit
+Ha: The model is not a good fit.
+
+```{r}
+library(ResourceSelection)
+hoslem.test(lmod$y,fitted(lmod),g=5)
+```
+Accept Ho. Fit is good.
+
+Model Selection:
+
+```{r}
+#lets add BMI to the data and then perform variable selection
+wcgs$bmi <- with(wcgs, 703*wcgs$weight/(wcgs$height^2))
+lmod <- glm(chd ~ age + height + weight +bmi + sdp + dbp + chol + dibep + cigs +arcus, family=binomial, wcgs)
+lmodr <- step(lmod, trace=0)
+summary(lmodr)
+```
+arcuspresent and height are not significant. Lets drop them one at a time, starting with the variable with the highest p value
+
+```{r}
+drop1(lmodr,test="Chi")
+```
+```{r}
+lmodr1<-glm(formula = chd ~ age + height + bmi + sdp + chol + dibep + 
+    cigs , family = binomial, data = wcgs)
+summary(lmodr1)
+drop1(lmodr1,test="Chi")
+```
+All variables are significant.
+
