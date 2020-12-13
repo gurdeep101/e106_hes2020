@@ -1,8 +1,8 @@
 rm(list - ls())
 setwd("~/OneDrive/courses/e106/e106_hes2020/lecture_r_codes")
 
-library(olsrr)
-library(datasets)
+library(olsrr) # regression residuals
+library(datasets) # datsets
 library(leaps) # regsubsets
 library(car) # avplot
 library(caret) # cross validation

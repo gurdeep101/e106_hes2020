@@ -10,8 +10,6 @@ summary(wine)
 
 #There are outliers in the data. Even though trees are fairly robust to messy data, it is always prudent to check for severe problems. For now, we'll assume that the data is reliable.
 
-
-
 #lets do 70 and 30 split
 
 set.seed(1023)

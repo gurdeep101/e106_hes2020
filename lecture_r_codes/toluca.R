@@ -1,6 +1,6 @@
 rm(list = ls())
-library(onewaytests)
-library(lmtest)
+library(onewaytests) # Regression Diagnostics
+library(lmtest) # Regression Diagnostics
 
 setwd("~/OneDrive/courses/e106/e106_hes2020/lecture_r_codes")
 
@@ -36,7 +36,6 @@ names(fitreg)
 # extract R2; ?sumary.lm for more info
 summary(fitreg)$r.squared
 summary(fitreg)$adj.r.squared
-
 
 new.par <- par(mfrow = c(2,2))
 plot(toluca$size, res, col = 'red', xlab = 'lot size', ylab = 'residual', main = 'Residual plot against X')
