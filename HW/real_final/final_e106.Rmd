@@ -38,5 +38,9 @@ library(randomForest) #RF
 library(vcd) # confusion matrix
 library(rpart) # regression tree
 library(rpart.plot) # plots of decision trees
+library(neuralnet) # neuralnet
+library(ResourceSelection) # goodness of fit test
+
+
 ```
 

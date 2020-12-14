@@ -35,6 +35,40 @@ You need to have a camera on your laptop.
 
 ----------------------------------------------------
 
+```{r}
+rm(list = ls())
+
+setwd("/cloud/project/HW/practice_final")
+
+library(olsrr) # regression residuals
+library(datasets) # datsets
+library(leaps) # regsubsets
+library(car) # avplot
+library(ggplot2) # graphics
+library(caret) # cross validation
+library(onewaytests) # Regression Diagnostics
+library(lmtest) # Regression Diagnostics
+library(QuantPsyc) # #standardized regression
+library(faraway) # datasets
+library(MASS) # negative binomial; robust regression
+library(ResourceSelection) # goodness of fit test
+library(glmnet) # ridge, lasso, ElasticNet, Logistic, Poisson, Cox
+library(olsrr) # regression tests
+library(lmtest) # time series
+library(Hmisc) # Lag
+library(orcutt) # cochrante-orcutt procedure
+library(HoRM) # hildreth Lu
+library(C50) # decision tree
+library(partykit) # better visualization
+library(gmodels) # cross table
+library(randomForest) #RF
+library(vcd) # confusion matrix
+library(rpart) # regression tree
+library(rpart.plot) # plots of decision trees
+library(neuralnet) # neural net
+library(ResourceSelection) # goodness of fit test
+
+```
 
 ## Problem 1
 
@@ -42,13 +76,144 @@ Use the question1 data, fit the regression model on Y by using all the variables
   
 a-) Is the model significant? Is there a Multicollinearity in the data? Are the errors Normally distributed with constant variance?
 
+```{r}
+# load data, examine columns and check for NA, etc.
+p1 <- read.csv('Practice Final Question 1.csv')
+head(p1)
+dim(p1)
+str(p1)
+summary(p1)
+
+# create train and test set
+set.seed(1023)
+ind <- sample(1:nrow(p1), round(0.7*nrow(p1)))
+tr_p1 <- p1[ind,]
+tes_p1 <- p1[-ind,]
+#check
+dim(tr_p1)
+
+# fit regression
+reg1a <- lm(Y~., data = tr_p1)
+summary(reg1a)
+
+# plot residuals
+newer.par <- par(mfrow = c(2,2))
+plot(reg1a)
+newer.par
+
+vif(reg1a)
+```
+
+From above we see that the model has F-stat = 11.04 with p-value = 6.65e-11 which means that the overall model is significant
+
+Individual coefficients x3, x6 and x10 are not signifiant.
+
+There is evidence of multicollinearity for x5, x8 and x9; we use lasso since some variables are not significant and we have evidence of multicollinearity
+
+```{r}
+x <- model.matrix(Y~., data = tr_p1) [,-c(1)]; x[1:5,]
+y <- tr_p1$Y
+
+lasso_1a <- glmnet(x, y, alpha = 1, nlambda = 100, lambda.min.ratio = 0.0001)
+plot(lasso_1a, xvar = 'norm', label = TRUE)
+
+# cross validation
+cv_lasso_mod <- cv.glmnet(x, y, alpha = 1, nlambda = 100, lambda.min.ratio = 0.0001)
+plot(cv_lasso_mod)
+
+best_lambda_lasso <- cv_lasso_mod$lambda.min
+best_lambda_lasso
+
+# 2 ways to predict coefficients
+coef(cv_lasso_mod, s = 'lambda.min')
+```
+
+```{r}
+reg1a_best <- ols_step_best_subset(reg1a)
+plot(reg1a_best)
+
+which.max(reg1a_best$adjr); which.min(reg1a_best$cp); which.min(reg1a_best$aic)
+```
+
+We choose model 7 for the final model; create df and perform regression below
+
+```{r}
+min_aic <- which.min(reg1a_best$aic)
+tr1a_aic_cols <- unlist(strsplit(reg1a_best$predictors[min_aic], split = ' ')); tr1a_aic_cols
+
+tr1a_aic_df <- tr_p1[tr1a_aic_cols]
+Y <- tr_p1$Y
+tr1a_aic_df <- cbind(Y, tr1a_aic_df); head(tr1a_aic_df)
+
+reg1a_final <- lm(Y~., data = tr1a_aic_df)
+summary(reg1a_final)
+
+# plot residuals
+newer.par <- par(mfrow = c(2,2))
+plot(reg1a_final)
+newer.par
+
+vif(reg1a_final)
+
+```
+```{r}
+par(mfrow = c(1,1))
+boxcox(reg1a_final, lambda = seq(-2,2,0.1))
+```
+Take reciprocal as per boxcox
+
+```{r}
+reg1a_final2 <- lm(1/Y~., data = tr1a_aic_df)
+summary(reg1a_final2)
+
+# plot residuals
+newer.par <- par(mfrow = c(2,2))
+plot(reg1a_final)
+newer.par
+
+vif(reg1a_final2)
+```
+
+
+Residuals vs fitted values chart seems to be normally distributed while QQ plot chart is not at 45 degrees. There is also evidence of some outliers.
+
+Hence regression assumptions relating to normal distribution of error terms and model fitting all but 1 or few outliers are not satisfied.
+
 b-) Are there any influential or outlier observations?
+
+```{r}
+influence.measures(reg1a_final2)
+ols_plot_dffits(reg1a_final2)
+ols_plot_cooksd_chart(reg1a_final2)
+```
+
+From above charts we see that points 69, 9 are potential outliers.
 
 c-) Can X5, X6, and X7 be dropped from the model? Perform the statistical test and state your final model.
 
+```{r}
+# reduced model
+reg1c <- lm(Y ~ X1 + X2 + X3 + X4 + X8 + X9 + X10, data = tr_p1)
+# summary(reg1c)
+
+summary(reg1a)$r.squared; summary(reg1c)$r.squared
+# anova test to check if coefficients can be dropped
+anova(reg1c, reg1a)
+
+```
+Ho : x5, x6, x7 = 0; x5, x6 and x7 can be dropped
+Ha : x5, x6, x7 != 0; x5, x6 and x7 cannot be dropped
+
+from above we see that p-value = 0.003 which is less than alpha = 0.05 (assumed). Hence we fail to reject Ho and conclude that these terms need to be retained.
+
 d-) Develop an alternative model by using the Regression Tree and compare the performance against the regression model built in part a. 
 
-f-) Score the model on hold-out sample, and recalibrate the model on the holdout sample. Compare the results against the final model derived part c.
+```{r}
+tree1d <- rpart(Y~., data = tr_p1)
+plot_tree1d <- rpart.plot(tree1d, digits = 5, fallen.leaves = TRUE, type = 2, extra = 101)
+```
+
+f-) Score the model on hold-out sample, and re-calibrate the model on the holdout sample. Compare the results against the final model derived part c.
 
 
 ## Problem 2
@@ -57,9 +222,33 @@ Use the question2 data set to answer this question. We are interested in predict
  
 a-) Build a model to predict the number of complaints, perform the statistical tests that shows that model is significant
 
+```{r}
+# load data, examine columns and check for NA, etc.
+p2 <- read.csv('Practice Final Question 2.csv')
+head(p2)
+dim(p2)
+str(p2)
+summary(p2)
+
+reg2a_lm <- lm(Y~., data = p2)
+summary(reg2a_lm)
+
+# plot residuals
+newer.par <- par(mfrow = c(2,2))
+plot(reg2a_lm)
+newer.par
+
+vif(reg2a_lm)
+```
+
 b-)   Find the predicted number complaints given the independent variables below and predict 95% confidence interval
 
 X1=606 X2=41393	X3=3	X4=3.04	X5=6.32
+
+```{r}
+test2a <- data.frame(X1=606, X2=41393, X3=3,	X4=3.04,	X5=6.32); test2a
+predict(reg2a_lm, test2a, interval = 'confidence', level = 0.95)
+```
 
 
 ## Problem 3 
@@ -68,9 +257,91 @@ Use question 3 data sets. Monthly data on amount of billings (Y) and on number o
 
 a-) Build a model to predict Y based on the independent variables and test if there is an autocorrelation persists in the data. If autocorrelation persists, remediate the autocorrelation. 
 
+```{r}
+# load data, examine columns and check for NA, etc.
+p3 <- read.csv('Practice Final Question 3.csv')
+head(p3)
+dim(p3)
+str(p3)
+summary(p3)
+
+# durbin-watson test for autocorrelation
+dwtest(Y~X, data = p3)
+
+```
+Ho : No autocorrelation
+Ha : Autocorrelation > 0
+
+p-value = 0.002891 which is less than 0.05; hence we reject Ho. This implies there is autocorrelation.
+
+Use cochrane orcutt procedure to remedy autocorrelation
+
+```{r}
+# Prediction
+f <- lm(Y~X, data = p3)
+et <- f$residuals
+et1 <- Lag(et, shift = 1)
+
+d1 <- sum(na.omit(et1*et))
+d2 <- sum(na.omit(et1)^2)
+
+rho <- d1/d2
+rho
+
+ytnew <- p3$Y - rho*Lag(p3$Y, shift = 1)
+xtnew <- p3$X - rho*Lag(p3$X, shift = 1)
+
+f1 <- lm(ytnew~xtnew)
+summary(f1)
+mse <- summary(f1)$sigma^2; mse
+
+dwtest(f1)
+```
+
 b-) X (Staff time) in month 21 is expected to be 3.625 thousand hours. Predict the amount of
 billings in constant dollars for month 21, using a 99 percent prediction intervaL Interpret
 your interval.
+
+```{r}
+# get intercept
+b0 <- summary(f1)[[4]][1,1]/(1-rho); b0
+s_bo <- summary(f1)[[4]][1,2]/(1-rho); s_bo
+
+# get coefficient
+b1 <- summary(f1)[[4]][2,1]; b1
+s_b1 <- summary(f1)[[4]][2,2]; s_b1
+
+yhat_correct <- b0 + b1*p3$Y
+yhat_correct
+
+# Point Forecasts
+xn_plus1 <- 3.625
+xn <- rev(p3$X)[1]; xn
+
+yhat_nplus1 <- b0+b1*xn_plus1; yhat_nplus1
+
+yn <- rev(p3$Y)[1]; yn
+en <- yn - (b0+b1*xn); en
+
+yhat_forecast_nplus1 <- yhat_nplus1 + rho*en
+yhat_forecast_nplus1
+
+# Forecast Interval
+xprime <- xtnew
+xbar_prime <- mean(xprime[-1]) # drop 1st value which is NA
+xn_plus1_prime <- xn_plus1 - rho*xn
+
+alpha = 0.05
+n <- length(p3$Y)
+
+spred <- sqrt(mse*(1 + (1/n) + (xn_plus1_prime - xbar_prime)^2/(sum((xprime[-1]-xbar_prime)^2))))
+spred
+
+pred_l <- yhat_forecast_nplus1 - qt(1-alpha/2, df = n-3)*spred; pred_l
+pred_u <- yhat_forecast_nplus1 + qt(1-alpha/2, df = n-3)*spred; pred_u
+
+```
+
 
 
 ## Problem 4
@@ -79,8 +350,52 @@ Use question 4 data set, Create development sample (70% of the data) and hold-ou
 
  a-) Use the development sample , fit a linear regression model,  regression tree and  Neural Network Model, and calculate the SSE for each model, which method has the lowest SSE?
  
+```{r}
+# load data, examine columns and check for NA, etc.
+p4 <- read.csv('Practice Final Question 4.csv')
+head(p4)
+dim(p4)
+str(p4)
+summary(p4)
+
+# create train and test set
+set.seed(1023)
+ind <- sample(1:nrow(p4), round(0.7*nrow(p4)))
+tr_p4 <- p4[ind,]
+tes_p4 <- p4[-ind,]
+#check
+dim(tr_p4)
+
+reg4a_lm <- lm(Y~., data = p4)
+summary(reg4a_lm)
+
+tree4a <- rpart(Y~., data = tr_p4)
+plot_tree4a <- rpart.plot(tree4a, digits = 5, fallen.leaves = TRUE, type = 2, extra = 101)
+
+nn4a <- neuralnet(Y~., data = tr_p4, hidden = c(3,1), act.fct = 'tanh')
+nn4a$result.matrix
+plot(nn4a, rep = 'best')
+```
+ 
  b-) test the models performances on teh hold out sample, which model would you choose?
 
+```{r}
+# lm prediction
+predict_4b_lm <- predict(reg4a_lm, tes_p4)
+pred_4blm <- data.frame(obs = tes_p4$Y, pred = predict_4b_lm)
+defaultSummary(pred_4blm)
+
+# regression tree prediction
+predict_4b_tree <- predict(tree4a, tes_p4)
+pred_4btree <- data.frame(obs = tes_p4$Y, pred = predict_4b_tree)
+defaultSummary(pred_4btree)
+
+# NN prediction
+predict_4b_nn <- compute(nn4a, tes_p4)
+pred_4bnn <- data.frame(obs = tes_p4$Y, pred = predict_4b_nn)
+defaultSummary(pred_4btree)
+
+```
 
 ## Problem 5
 
@@ -88,16 +403,64 @@ Use Question 5 dataset, Y is a dichotomous response variable and X2, X3, and X4 
 
 a-) Fit a regression model containing the predictor variables in first-order terms and interaction terms for all pairs of predictor variables on development sample. 
 
+```{r}
+# load data, examine columns and check for NA, etc.
+p5 <- read.csv('Practice Final Question 5.csv')
+head(p5)
+dim(p5)
+str(p5)
+summary(p5)
+
+# create train and test set
+set.seed(1023)
+ind <- sample(1:nrow(p4), round(0.7*nrow(p5)))
+tr_p5 <- p5[ind,]
+tes_p5 <- p5[-ind,]
+#check
+dim(tr_p5)
+
+# model with 2 way interactions
+reg5a_glm <- glm(Y~.^2, data = tr_p5, family = binomial)
+summary(reg5a_glm)
+
+anova(reg5a_glm, test = 'Chi')
+```
+
 b-)Use the likelihood ratio test to determine whether all interaction terms can be dropped
 from the regression model; State the alternatives, full and reduced models, decision rule, and conclusion. 
+
+```{r}
+# reduced model
+reg5b_glm <- glm(Y~., data = tr_p5)
+summary(reg5b_glm)
+
+# anova test - reduced model, full model
+anova(reg5b_glm, reg5a_glm, test = 'Chi')
+```
 
 c-)For logistic regression model in part (a), use backward elimination to decide which predictor
 variables can be dropped from the regression model.  Which variables are retained in the regression model?
 
+```{r}
+drop1(reg5a_glm, test = 'Chi')
+```
+
 d-) Conduct the Hosmer-Lemeshow goodness of fit test for the appropriateness of the logistic regression function by forming five groups. State the alternatives, decision rule, and conclusion. 
 
+```{r}
+hoslem.test(reg5a_glm$y, fitted(reg5a_glm), g = 5)
+# Accept Ho - Fit is good; since p > 0.05
+
+```
 
 e-) Make the prediction for the following two cases and calculate 95% confidence interval
 
 X1=(33,6) X2=(1,1) X3=(1,1) X4=(0,0)
+
+```{r}
+test5e<- data.frame(X1=c(33,6), X2=c(1,1), X3=c(1,1), X4=c(0,0)); test5e
+predict(reg5a_glm, test5e, interval = 'confidence', level = 0.95)
+confint(reg5a_glm) #, level = 0.95)
+
+```
 
