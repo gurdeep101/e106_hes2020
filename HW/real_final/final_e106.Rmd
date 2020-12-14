@@ -1,0 +1,42 @@
+---
+title: "CSCI E106 Final"
+author: "Gurdeep"
+date: "12/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+rm(list = ls())
+
+setwd("/cloud/project/HW/real_final")
+
+library(olsrr) # regression residuals
+library(datasets) # datsets
+library(leaps) # regsubsets
+library(car) # avplot
+library(ggplot2) # graphics
+library(caret) # cross validation
+library(onewaytests) # Regression Diagnostics
+library(lmtest) # Regression Diagnostics
+library(QuantPsyc) # #standardized regression
+library(faraway) # datasets
+library(MASS) # negative binomial; robust regression
+library(ResourceSelection) # goodness of fit test
+library(glmnet) # ridge, lasso, ElasticNet, Logistic, Poisson, Cox
+library(olsrr) # regression tests
+library(lmtest) # time series
+library(Hmisc) # Lag
+library(orcutt) # cochrante-orcutt procedure
+library(HoRM) # hildreth Lu
+library(C50) # decision tree
+library(partykit) # better visualization
+library(gmodels) # cross table
+library(randomForest) #RF
+library(vcd) # confusion matrix
+library(rpart) # regression tree
+library(rpart.plot) # plots of decision trees
+```
+
