@@ -1,0 +1,499 @@
+---
+title: 'CSCI E-106: Final Exam - Fall 2020'
+author: "Hakan Gogtas"
+date: "12/5/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list = ls())
+
+setwd("/cloud/project/HW/real_final")
+
+library(knitr)
+library(pander)
+library(rmarkdown)
+library(markdown)
+library(tidyr)
+
+library(fastDummies) # dummies
+library(olsrr) # regression residuals
+library(datasets) # datsets
+library(leaps) # regsubsets
+library(car) # avplot
+library(ggplot2) # graphics
+library(caret) # cross validation
+library(onewaytests) # Regression Diagnostics
+library(lmtest) # Regression Diagnostics
+library(QuantPsyc) # #standardized regression
+library(faraway) # datasets
+library(MASS) # negative binomial; robust regression
+library(ResourceSelection) # goodness of fit test
+library(glmnet) # ridge, lasso, ElasticNet, Logistic, Poisson, Cox
+library(olsrr) # regression tests
+library(lmtest) # time series
+library(Hmisc) # Lag
+library(orcutt) # cochrante-orcutt procedure
+library(HoRM) # hildreth Lu
+library(C50) # decision tree
+library(partykit) # better visualization
+library(gmodels) # cross table
+library(randomForest) #RF
+library(vcd) # confusion matrix
+library(rpart) # regression tree
+library(rpart.plot) # plots of decision trees
+library(neuralnet) # neuralnet
+library(ResourceSelection) # goodness of fit test
+library(boot) # Inv logit
+```
+
+### Instructions
+
+Open book and open notes exam ( textbooks (print or pdf), lecture slides, notes, practice exam, homework solutions, and TA slides, including all Rmd's*).
+
+You are allowed to use RStudio Cloud (https://rstudio.cloud.) , Microsoft Word, Power Point and PDF reader, and canvas on your laptop.
+
+Proctorio is required to start this exam. If you are prompted for an access code, you must Configure Proctorio  on your machine. 
+
+Please read the list of recording and restrictions provided by Proctorio carefully before taking the exam 
+
+Please pay attention any timing and technical warnings that popped up your screen 
+
+The exam will be available from Monday December 14th at 8 am EST through Tuesday December 15th at 8:00pm EST.
+Once you start the exam, you have to complete the exam in 3 hours or by Tuesday December 15th at 8:00pm EST, whichever comes first.
+
+In order to receive full credit, please provide full explanations and calculations for each questions 
+
+Make sure that you are familiar with the procedures for troubleshooting exam issues Preview the document
+Make sure you submit both .Rmd and (knitted) pdf or html files.
+
+
+You need to have a camera on your laptop.
+
+----------------------------------------------------
+
+## Question 1
+
+
+Use the "Final Exam Fall 2020 Question 1.csv" data set.  Company executives want to be able to
+predict market share of their product (Y) based on merchandise price ($X_1$), the gross Nielsen
+rating points ($X_2$), an index of the amount of advertising exposure that the product received);
+the presence or absence of a wholesale pricing discount ($X_3$ = 1 if discount present: otherwise
+$X_3$ = 0); the presence or absence of a package promotion during the period ($X_4$ = 1 if promotion
+present: otherwise $X_4$ = 0). (10 points, 5 points each)
+
+
+a- ) Use $X_1$, $X_2$, $X_3$, and $X_4$ to predict Y.  Develop a best subset model for predicting Y. Justify your choice of model.  Ensure that all variables are significant in your final model, use $\alpha=0.05$.
+
+```{r}
+mkt <- read.csv('Final Exam Fall 2020 Question 1.csv')
+colnames(mkt)
+str(mkt)
+p1 <- mkt[,1:5]
+str(p1)
+summary(p1)
+tail(p1)
+# rename columns
+colnames(p1) <- c('Y', 'X1', 'X2', 'X3', 'X4')
+
+# fit simple linear regression
+p1_lm <- lm(Y~., data = p1)
+summary(p1_lm)
+
+# perform best subset selection
+p1_best <- ols_step_best_subset(p1_lm, details = TRUE)
+
+# check for max value using AdjR, Cp, AIC
+rbind(which.max(p1_best$adjr), which.min(p1_best$aic), which.min(p1_best$cp))
+min_aic <- which.min(p1_best$aic)
+```
+
+This shows that model 3 is the best. We proceed to build the regression using model 3
+
+```{r}
+aic_df_cols <- unlist(strsplit(p1_best$predictors[min_aic], split = ' '))
+aic_df_cols
+
+p1_aic_df <- p1[aic_df_cols]
+
+# add response variable and verify structure
+Y <-p1$Y
+p1_aic_df <- cbind(Y, p1_aic_df)
+str(p1_aic_df)
+
+# run regression with shortlisted columns
+reg_p1_aic <- lm(Y~., data = p1_aic_df)
+summary(reg_p1_aic)
+
+
+```
+
+
+
+b-) Check all the model assumptions (using the residual plots). And test auto correlation, use $\alpha=0.01$. If auto correlation is present, revise the model to eliminate the correlation.
+
+```{r}
+# standard diagnostic plots
+
+newer.par = par(mfrow = c(2,2))
+plot(reg_p1_aic)
+newer.par
+
+# Measures of influence
+
+# DFFITS Plot - Difference in Fits
+
+ols_plot_dffits(reg_p1_aic)
+
+# Cooks Distance Chart
+ols_plot_cooksd_chart(reg_p1_aic)
+
+# DFBETAs Panel 
+ols_plot_dfbetas(reg_p1_aic)
+
+# Studentized residual plot
+ols_plot_resid_stud(reg_p1_aic)
+
+# studentized residuals vs leverage plot
+ols_plot_resid_lev(reg_p1_aic)
+
+# Outlier Test
+outlierTest(reg_p1_aic, cutoff = 0.10, n.max = Inf)
+
+# Durbin Watson test for autocorrelation
+dwtest(reg_p1_aic)
+```
+Various plots indicate that there are no outliers
+
+DW Test 
+Ho : No autocorrelation; Ha: There is autocorrelation; alpha = 0.01
+As seen above, p-value of 0.3484 indicates that there is no autocorrelation.
+
+## Question 2
+
+Use the "Final Exam Fall 2020 Question 2.csv" data set. Residential sales that occurred during the
+year 2002 were available from a city in the midwest. Data on 522 arms-length transactions
+include following variables:
+
+sales price,
+
+finished square feet,
+
+number of bedrooms,
+
+number of bathrooms,
+
+air conditioning (1 if yes; 0 otherwise)
+
+garage size
+
+pool (1 if yes; 0 otherwise),
+
+year built,
+
+quality (3 different qualities),
+
+style (there are 7 different styles, 1 to 7),
+
+lot size,
+
+year built.
+
+(50 points)
+
+
+a-) Use "set.seed(300)" to create development sample (70% of the data) and hold-out sample (30% of the data). (5 points)
+
+```{r}
+p2 <- read.csv('Final Exam Fall 2020 Question 2.csv')
+colnames(p2)
+str(p2)
+summary(p2)
+tail(p2)
+
+# rename columns
+p2a <- p2
+colnames(p2a) <- c('Y', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10', 'X11')
+str(p2a)
+
+table(p2a$X4) # 0,1 no dummy needed - AC Yes No
+table(p2a$X6) # 0,1 no dummy needed - Pool yes no
+table(p2a$X8) # 1,2,3 - dummy needed - 3 different qualities
+table(p2a$X9) # 1-7 - dummy needed - 7 different style types
+table(p2a$X11) # # 0,1 - no dummy needed
+
+# create dummy variables for x8 and x9
+p2a <- dummy_cols(p2a, select_columns = 'X8')
+p2a <- dummy_cols(p2a, select_columns = 'X9')
+#check
+str(p2a)
+# drop redundant columns and check
+p2dummy <- p2a[,-c(9,10,13,16)]; colnames(p2dummy)
+
+# split into development and holdout
+set.seed(300)
+ind <- sample(1:nrow(p2dummy), round(0.7*nrow(p2dummy),0)); length(ind)
+
+dev2a <- p2dummy[ind,]; dim(dev2a)
+ho2a <- p2dummy[-ind,]; dim(ho2a)
+```
+
+b-) Use all variables to predict the sales price on the development sample. Transform the sales price and refit the model. Explain why a transformation would be necessary in this case.(5 points)
+
+```{r}
+lm2b <- lm(Y~., data = dev2a)
+summary(lm2b)
+
+# check diagnostic plots
+newer.par = par(mfrow = c(2,2))
+plot(lm2b)
+newer.par
+```
+Funnel shaped distribution of the plot indicates heteroskedasticity. Hence we transform the response variable.
+
+```{r}
+# boxcox to decied transform
+boxcox(lm2b, lambda = seq(-2, 2, by = 0.1))
+
+```
+
+BoxCox transform indicates lambda = 0 is best. Hence, we take log of response variable
+
+```{r}
+lm2b_log <- lm(log(Y)~., data = dev2a)
+summary(lm2b_log)
+
+# check diagnostic plots
+newer.par = par(mfrow = c(2,2))
+plot(lm2b_log)
+newer.par
+
+```
+Regression diagnostic plots above show that all residual vs fitted is random and QQ plot is in a straight line.
+
+This indicates that regression assumptions are satisfied.
+
+c-) Use stepwise (both ways) model selection to select the best model for predicting transformed sales price on the development sample.**Ensure that all variables are significant, use $\alpha=0.05$. Justify your choice of model. Check the appropriate model assumptions visually from the graphs.** (5 points)
+
+```{r}
+best2c <- ols_step_both_p(lm2b_log, pent = 0.9, prem = 0.05, details = TRUE)
+best2c$predictors
+
+# extract predictors and create df of relevant columns
+best2c_df_cols <- unlist(best2c$predictors)
+best2c_df_cols
+
+best2c_df <- dev2a[best2c_df_cols]; str(best2c_df)
+
+# add response variable and verify structure
+Y <-dev2a$Y
+best2c_df <- cbind(Y, best2c_df)
+str(best2c_df)
+
+# run regression with shortlisted columns
+lmbest2c <- lm(Y~., data = best2c_df)
+summary(lmbest2c)
+```
+
+summary shows that X3 and X4 are not significant. We drop them
+
+```{r}
+best2c_df_final <- best2c_df[,-c(7,8)]; str(best2c_df_final)
+
+lm_best2c_final <- lm(Y~., data = best2c_df_final)
+summary(lm_best2c_final)
+```
+
+
+d-) Use regression Tree to predict the sales price on the development sample (use 3 digits). (5 points) 
+
+```{r}
+tree2d <- rpart(Y~., data = dev2a)
+plot_tree2d <- rpart.plot(tree2d, digits = 3, fallen.leaves = TRUE, type = 2, extra = 101)
+
+dev2a_tree_pred <- predict(tree2d, dev2a)
+
+```
+
+
+e-) Use Neural Network approach to predict the sales price on the development sample. (10 points)
+
+```{r}
+normalize <- function(x) {
+  return((x-min(x))/(max(x) - min(x)))
+}
+
+dev2a_norm <- as.data.frame(lapply(dev2a, normalize))
+head(dev2a_norm)
+
+ho2a_norm <- as.data.frame(lapply(ho2a, normalize))
+head(ho2a_norm)
+
+# neural net
+dev2a_nn <- neuralnet(Y~., data = dev2a_norm, hidden = c(5,5))
+plot(dev2a_nn)
+
+dev2a_nn_pred <- compute(dev2a_nn, dev2a_norm)
+```
+
+f-) Use elastic net approach to predict the sales price on the development sample. (10 points)
+
+```{r}
+# ElasticNet - mix of ridge and lasso 
+
+# define x and y matrix for glmnet
+x <- model.matrix(Y~., data = dev2a) [,-c(1)] # drop last column
+y <- dev2a$Y
+
+cv_enet_mod <- cv.glmnet(x, y, alpha = 0.5, nlambda = 100, lambda.min.ratio = 0.0001)
+plot(cv_enet_mod)
+
+best_lambda_enet <- cv_enet_mod$lambda.min
+best_lambda_enet
+
+# get coefficients
+coef(cv_enet_mod, s = 'lambda.min')
+
+# predict
+pred_dev2a <- predict(cv_enet_mod, s = best_lambda_enet, type = 'link', newx = x)
+
+# hold out set
+# define x and y matrix for glmnet
+x1 <- model.matrix(Y~., data = ho2a) [,-c(1)] # drop last column
+y1 <- ho2a$Y
+```
+
+g-) Score all models on hold-out sample. Compare the SSEs, $R^2$ and select the best model. (10 points)
+
+```{r}
+# Measure performance with SSE
+sse <- function(actual, predicted) {
+  sum((actual - predicted)^2)
+}
+
+# MEasure performance with RSq
+r2 <- function(actual, predicted) {
+  1-sum((actual - predicted)^2)/((length(actual)-1)*var(actual))
+}
+
+predlm <- predict(lm2b_log, ho2a)
+predlmbest <- predict(lmbest2c, ho2a)
+predlmbest2cfinal <- predict(lm_best2c_final, ho2a)
+predtree2d <- predict(tree2d, ho2a)
+hoa2a_nn_pred <- compute(dev2a_nn, ho2a_norm)
+pred_ho2a <- predict(cv_enet_mod, s = best_lambda_enet, type = 'link', newx = x1)
+
+
+```
+
+
+## Question 3
+
+Use the "Final Exam Fall 2020 Question 2.csv" data set in Question 2. Create a binary response variable Y, called high quality, by letting Y=1 if quality variable equals to 1 otherwise 0. (20 points)
+
+a-) Fit a model to predict Y, ensure that all variables are significant by using the backward elimination to build your model. Use $\alpha=0.05$ and ensure that all variables are significant.(10 points) 
+
+```{r}
+p3 <- p2
+colnames(p3)
+str(p3)
+summary(p3)
+tail(p3)
+
+# rename columns
+p3a <- p3
+colnames(p3a) <- c('X0', 'X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10', 'X11')
+str(p3a)
+
+table(p3a$X4) # 0,1 no dummy needed - AC Yes No
+table(p3a$X6) # 0,1 no dummy needed - Pool yes no
+table(p3a$X9) # 1-7 - dummy needed - 7 different style types
+table(p3a$X11) # # 0,1 - no dummy needed
+
+# create dummy variables for x9
+p3a <- dummy_cols(p3a, select_columns = 'X9')
+p3a <- dummy_cols(p3a, select_columns = 'X8')
+
+#check
+str(p3a)
+
+# drop redundant columns and check
+colnames(p3a)
+p3dummy <- p3a[,-c(9, 10, 13,21,22)]; colnames(p3dummy)
+
+ff<-lm(X8_1~.,data=p3dummy)
+ff$coefficients
+```
+
+b-) Conduct the Hosmer-Lemeshow goodness of fit test for the appropriateness of the logistic regression function by forming five groups. State the alternatives, decision rule, and conclusion. (5points)
+
+```{r}
+#hoslem.test(ff$y,fitted(ff),g=5)
+```
+
+c-) What is the estimated probability of each house from the data given below having good quality? (Output should have 3 probabilities). Copy and paste the code below on r (5points)
+
+test.dat<-data.frame(matrix(c(559000,2791,3,4,1,3,0,1992,1,30595,0,535000,3381,5,4,1,3,0,1988,7,23172,
+0,525000,3459,5,4,1,2,0,1978,5,35351,0),byrow=T,nrow=3,ncol=11))
+
+dimnames(test.dat)[[2]]<-c("Sales.price","Finished.square.feet","Number.of.bedrooms","Number.of.bathroom",
+"Air.conditioning","Garage.size","Pool","Year.built","Style","Lot.size","Adjacent.to.highway")
+
+
+## Question 4
+
+Use ships data sets in the MASS package. Copy and paste and following code "library(MASS);data(ships,package = "MASS")". (10 points, 5 points each)
+
+Data contains the number of wave damage incidents and aggregate months of service for different types of ships broken down by year of construction and period of operation.
+
+a-) Fit linear models with the number of damage incidents as the response and all other variables are predictors. Is the model significant?
+
+```{r}
+data(ships,package = "MASS")
+str(ships)
+
+# linear model
+lm4a <- lm(incidents~., data = ships)
+summary(lm4a)
+
+# linear model will not work since this is count - fit poisson
+modp <- glm(incidents ~ ., family = poisson, data = ships)
+summary(modp)
+```
+
+b-) Predict the number of incidents for the following data point. ("copy and paste onto R)
+
+test.data<-data.frame(type="B",year=60,period=60,service=44882)
+
+```{r}
+test.data<-data.frame(type="B",year=60,period=60,service=44882)
+test.data
+
+drop1(modp, test = 'Chi')
+pred2 <- predict(modp, test.data, type = 'link', se.fit = TRUE); 
+
+exp(pred2$fit)
+
+```
+
+
+## Question 5
+
+Refer to question 2-C and your final model . There could be potential outliers in the model. Build a robust regression model (use the same variables) and compare your regression model and outputs with the model you built in question 2-C. (10 Points)
+
+```{r}
+# model in 2c summarized again
+summary(lmbest2c)
+
+# using huber weights
+rr_huber <- rlm(Y~., data = best2c_df)
+summary(rr_huber)
+```
+
+The robust regression model has a lower residual standard error as seen above
+
