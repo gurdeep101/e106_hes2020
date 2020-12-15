@@ -38,7 +38,8 @@ You need to have a camera on your laptop.
 ```{r}
 rm(list = ls())
 
-setwd("/cloud/project/HW/practice_final")
+setwd("~/OneDrive/courses/e106/e106_hes2020/HW/practice_final")
+# setwd("/cloud/project/HW/practice_final")
 
 library(olsrr) # regression residuals
 library(datasets) # datsets
@@ -67,7 +68,7 @@ library(rpart) # regression tree
 library(rpart.plot) # plots of decision trees
 library(neuralnet) # neural net
 library(ResourceSelection) # goodness of fit test
-
+library(fastDummies) # dummies
 ```
 
 ## Problem 1
@@ -83,6 +84,20 @@ head(p1)
 dim(p1)
 str(p1)
 summary(p1)
+
+# 6 & 7 are categorical variables
+table(p1$X6) # 2 level
+table(p1$X7) # 4 level
+
+# add dummy columns for X6 & x7 
+p1 <- dummy_cols(p1, select_columns = 'X6')
+p1 <- dummy_cols(p1, select_columns = 'X7')
+
+head(p1)
+
+# drop original columns & 1 dummy column each
+p1 <- p1[,-c(7,8,12,14)]
+colnames(p1)
 
 # create train and test set
 set.seed(1023)
