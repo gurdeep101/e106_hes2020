@@ -147,6 +147,7 @@ defaultSummary(model_test1)
 control1 <- trainControl(method = 'cv', number = 10) # define parameters for train
 lmfit2 <- train(mpg~., data = mtcars, method = 'lm', trControl = control1, metric = 'Rsquared')
 summary(lmfit2)
+# plot(lmfit2) - doesn't work
 
 # check on test data
 predict_test2 <- predict(lmfit2, test)
@@ -177,7 +178,7 @@ defaultSummary(model_test4)
 # CV - test model is stable
 # test eval - out of sample performance
 
-# Added variable plots
+# Added variable plots - impact of adding variables - needed or not?
 datat <- read.csv('Dataset_10TA01.csv')
 f1 <- lm(Y~X1+X2, data = datat)
 par(mfrow=c(1,3))
@@ -283,7 +284,7 @@ hii_datat
 
 n <- length(datat$Y)
 p <-  ncol(datat)-1
-index <- hii_datat>2*p/n
+index <- hii_datat>2*p/n # index of outlier hat values 
 
 plot(datat$X2, datat$X1, pch = 16)
 text(datat$X1+0.5, datat$X2, labels = as.character(1:length(datat$X1)), col = 'red')

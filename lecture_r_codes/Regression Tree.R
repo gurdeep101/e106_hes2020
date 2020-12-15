@@ -58,6 +58,6 @@ MAE(wine_test$quality,p.rpart)
 #Measuring performance with the SSE
 SSE <- function(actual, predicted) {sum((actual - predicted)^2)}
 SSE(wine_test$quality,p.rpart)
-#Measuring performance with the RSquare
+#Measuring performance with the RSquare (adj)
 R2 <- function(actual, predicted) {sum((actual - predicted)^2)/((length(actual)-1)*var(actual))}
 1-R2(wine_test$quality,p.rpart)
