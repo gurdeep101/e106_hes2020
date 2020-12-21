@@ -168,6 +168,7 @@ normalize <- function(x) {
 conc_norm <- as.data.frame(lapply(concrete, normalize))
 summary(conc_norm)
 colnames(conc_norm)
+str(conc_norm)
 
 # sort into 72 - 25 set
 ind <- sample(1:nrow(conc_norm), round(0.75*nrow(conc_norm)),0); length(ind)
