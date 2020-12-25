@@ -1,0 +1,369 @@
+---
+title: "Final Exam Solutions Fall 2020"
+author: "Hakan Gogtas"
+date: "12/5/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(echo = FALSE, warning = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+
+library(knitr)
+library(pander)
+library(rmarkdown)
+library(markdown)
+```
+
+## Question 1
+
+
+Use the "Final Exam Fall 2020 Question 1.csv" data set. The observations are listed in time order. Variables are;
+
+Website.Delivered (Y): Number of websites completed and delivered to customers during the quarter
+
+Backlog ($X_1$): Number of website orders in backlog at the close of the quarter
+
+Team ($X_2$): Team Number 1 to 13
+
+Experience ($X_3$): Number of months team has been together
+
+Process.Change ($X_4$): A change in the website development process occurred during the second quarter of 2002: 1 if quarter 2 or 3 of 2002; 0 otherwise
+
+Year ($X_5$): 2001 or 2002
+
+Quarter ($X_6$): 1,2,3,or4
+
+Use $X_1$, $X_2$, $X_3$, and $X_4$ to predict Y.  Develop a best subset linear regression model for predicting Y. Justify your choice of model. Assess your model's ability to predict and discuss its use as a tool for management decisions. 
+
+```{r, include=FALSE}
+library(olsrr)
+library(datasets)
+library(leaps)
+library('fastDummies')
+
+Q1.Dat <- read.csv("/cloud/project/Final Exam Fall 2020 Question 1.csv")
+
+f.m1<-lm(Market.Share~Price+Rating.Points+Discount.Price+Promotion,data=Q1.Dat)
+summary(f.m1)
+
+k1<-ols_step_best_subset(f.m1)
+f.m2<-lm(Market.Share~Price+Discount.Price+Promotion,data=Q1.Dat)
+summary(f.m2)
+plot(k1$adjr)
+library(lmtest)
+```
+Based on all Adjusted $R^2$, AIC, BIC, and $c_p$. The best model is below
+
+`r {pander(summary(f.m2))}`
+
+All variables are significant. $R^2$ is 67%.  Lets check for the auto correlation. 
+
+`r {pander(dwtest(f.m2))}`
+
+No auto correlation persist in the data.
+
+```{r}
+par(mfrow=c(2,2))
+plot(f.m2)
+library(olsrr)
+ols_plot_cooksd_bar(f.m2)
+ols_plot_resid_lev(f.m2)
+ols_plot_resid_stud_fit(f.m2)
+```
+
+From the graphs, all assumptions are met. 
+
+## Question 2
+
+Use the "Final Exam Fall 2020 Question 2.csv" data set. Residential sales that occurred during the
+year 2002 were available from a city in the midwest. Data on 522 arms-length transactions
+include following variables:
+sales price,
+finished square feet,
+
+number of bedrooms,
+
+number of bathrooms,
+
+air conditioning (1 if yes; 0 otherwise)
+
+garage size
+
+pool (1 if yes; 0 otherwise),
+
+year built,
+
+quality (3 different qualities),
+
+style (there are 7 different styles, 1 to 7),
+
+lot size,
+
+year built,
+
+
+a-) Use "set.seed(300)" to create development sample (70% of the data) and hold-out sample (30% of the data).
+
+b-) Use all variables to predict the sales price on the development sample. Do we need to transfer Sales Price? Transform the sales price and refit the model.
+
+c-) Use stepwise (both ways) model selection to select the best model for predicting transformed sales price on the development sample.**Ensure that all variables are significant, use $\alpha=0.05$. Justify your choice of model. Check the appropriate model assumptions visually from the graphs.** 
+
+d-) Use regression Tree to predict the sales price on the development sample. Comment on the model performance. 
+
+e-) Use Neuron Network approach to predict the sales price on the development sample.Comment on the model performance.  
+
+f-) Score all models on hold-out sample. Compare the SSEs, $R^2$ and select the best model.
+
+a-)See below.
+```{r}
+Q2.Dat <- read.csv("/cloud/project/Final Exam Fall 2020 Question 2.csv")
+
+Q2.Dat<-dummy_cols(Q2.Dat, select_columns = 'Style')
+Q2.Dat<-dummy_cols(Q2.Dat, select_columns = 'Quality')
+set.seed(994)
+IND=sample(c(1:522),300)
+Q2.Dev<-Q2.Dat[IND,]
+Q2.hold<-Q2.Dat[-IND,]
+```
+
+b-) Log transformation is needed. Full
+
+```{r}
+library(leaps)
+library(olsrr)
+m.q2<-lm(Sales.price~Finished.square.feet+Number.of.bedrooms+Number.of.bathrooms+Air.conditioning+Garage.size+Pool+Year.built+Quality_2+Quality_3+Style_2+Style_3+Style_4+Style_5+Style_6+Style_7+Lot.size+Adjacent.to.highway,data=Q2.Dev)
+```
+The model summary table is below: $R^2$ is 85% and there are seven variables that are not significant. QQ plot indicates that the data needs to be transformed. Box Plot indicates that log transformation is needed.
+
+`r {pander(summary(m.q2))}`
+```{r}
+library(MASS)
+boxcox(m.q2,lamda=seq(-2,2,0.1))
+par(mfrow=c(2,2))
+plot(m.q2)
+```
+
+
+c-) 
+
+```{r}
+m.q21<-lm(log(Sales.price)~Finished.square.feet+Number.of.bedrooms+Number.of.bathrooms+Air.conditioning+Garage.size+Pool+Year.built+Quality_2+Quality_3+Style_2+Style_3+Style_4+Style_5+Style_6+Style_7+Lot.size+Adjacent.to.highway,data=Q2.Dev)
+
+k2<-ols_step_both_p(m.q21,prem=0.05,details=FALSE)
+k2$model
+m.q2.f<-lm(log(Sales.price)~Finished.square.feet+Year.built+Lot.size+Style_7+Garage.size+Quality_3+Quality_2+Pool+Style_4+Number.of.bedrooms+Style_2,data=Q2.Dev) 
+```
+Based on the stepwise, the best model is below:
+
+`r {pander(summary(m.q2.f))}`
+
+All variables are significant. $R^2$ is 86%. QQ plot shows that the data is normal. However, observation 115 is an leverage point based and there are several outliers.
+
+```{r}
+par(mfrow=c(2,2))
+plot(m.q2.f)
+library(olsrr)
+ols_plot_cooksd_bar(m.q2.f)
+ols_plot_resid_lev(m.q2.f)
+ols_plot_resid_stud_fit(m.q2.f)
+plot(Q2.Dev$Sales.price,exp(m.q2.f$fitted.values), col='blue', pch=16, ylab= "Predicted Sales.price", xlab= "Actual Y",main="Regression Model")
+```
+d-)Please see below,
+```{r}
+library(rpart)
+q2.tr<-rpart(Sales.price~Finished.square.feet+Number.of.bedrooms+Number.of.bathrooms+Air.conditioning+Garage.size+Pool+Year.built+Quality_2+Quality_3+Style_2+Style_3+Style_4+Style_5+Style_6+Style_7+Lot.size+Adjacent.to.highway,data=Q2.Dev)
+library(rpart.plot)
+par(mfrow=c(1,1))
+rpart.plot(q2.tr,digits = 3)
+SSE.Tree.Dev<-sum((predict(q2.tr)-Q2.Dev$Sales.price)^2)
+SSE.Tree.Dev
+p.rpart<-predict(q2.tr,Q2.Dev)
+plot(Q2.Dev$Sales.price,p.rpart, col='blue', pch=16, ylab= "Predicted Sales.price", xlab= "Actual Y",main="Regression Tree")
+```
+
+e-) Please see below,
+
+```{r}
+#install.packages("neuralnet")
+library(neuralnet)
+normalize <- function(x) {return((x - min(x)) / (max(x) - min(x)))}
+scaled.Q2.Dat <- as.data.frame(lapply(Q2.Dat, normalize))
+scaled.Q2.Dev<- scaled.Q2.Dat[IND,]
+scaled.Q2.Hold<- scaled.Q2.Dat[-IND,]
+
+NN = neuralnet(Sales.price~Finished.square.feet+Number.of.bedrooms+Number.of.bathrooms+Air.conditioning+Garage.size+Pool+Year.built+Quality_2+Quality_3+Style_2+Style_3+Style_4+Style_5+Style_6+Style_7+Lot.size+Adjacent.to.highway,hidden=c(5,5), scaled.Q2.Dev,linear.output= T ) 
+
+plot(NN)
+predict_testNN= compute(NN, scaled.Q2.Dev[,-c(1,13,20)])
+#we need to transform it back to orginal scale
+predict_testNN1 = (predict_testNN$net.result* (max(Q2.Dat$Sales.price) -min(Q2.Dat$Sales.price))) + min(Q2.Dat$Sales.price)
+plot(Q2.Dev$Sales.price, predict_testNN1, col='blue', pch=16, ylab= "Predicted Sales.price", xlab= "Actual Y")
+```
+f-) see below
+```{r}
+library(glmnet)
+x <- model.matrix(Sales.price~., Q2.Dev)[,-c(1,9,10,13,20)]
+xnew<-model.matrix(Sales.price~., Q2.hold)[,-c(1,9,10,13,20)]
+y <- Q2.Dev$Sales.price
+EnetMod <- glmnet(x,y, alpha=0.5, nlambda=100,lambda.min.ratio=0.0001)
+CvElasticnetMod <- cv.glmnet(x, y,alpha=0.5,nlambda=100,lambda.min.ratio=0.0001)
+best.lambda.enet <- CvElasticnetMod$lambda.min
+coef(CvElasticnetMod, s = "lambda.min")
+```
+
+
+
+
+g-) Elastic Net is the best model. it has lowest SSE and highest $R^2$.
+```{r}
+#Measuring performance with the SSE
+SSE <- function(actual, predicted) {sum((actual - predicted)^2)}
+
+#Measuring performance with the RSquare
+R2 <- function(actual, predicted) {sum((actual - predicted)^2)/((length(actual)-1)*var(actual))}
+
+#Regression
+reg.predict<-exp(predict(m.q2.f,Q2.hold))
+#Tree
+tree.predict<-predict(q2.tr,Q2.hold)
+#NN
+nn.predict<-compute(NN, scaled.Q2.Hold)
+nn.predict1 = (nn.predict$net.result* (max(Q2.Dat$Sales.price) -min(Q2.Dat$Sales.price))) + min(Q2.Dat$Sales.price)
+#Elastic Net
+enet.predict <- predict(CvElasticnetMod , s = best.lambda.enet, newx = xnew)
+
+#SSEs
+
+cbind(REG=SSE(Q2.hold$Sales.price,reg.predict),
+Tree=SSE(Q2.hold$Sales.price,tree.predict),
+NN=SSE(Q2.hold$Sales.price,nn.predict1),ENET=SSE(Q2.hold$Sales.price,enet.predict))
+
+#R Squares
+cbind(Reg=1-R2(Q2.hold$Sales,reg.predict),Tree=1-R2(Q2.hold$Sales,tree.predict),NN=1-R2(Q2.hold$Sales,nn.predict1),ENET=1-R2(Q2.hold$Sales,enet.predict))
+```
+
+## Question 3
+
+Refer to the data in Question 2. Create a binary response variable Y, called high quality, by letting Y=1 if quality variable equals to 1 otherwise 0. 
+
+a-) Fit a model to predict Y, ensure that all variables are significant by using the backward elimination to decide which predictor variables can be dropped from the regression model. Use $\alpha=0.05$.
+
+b-) Conduct the Hosmer-Lemeshow goodness of fit test for the appropriateness of the logistic regression function by forming five groups. State the alternatives, decision rule, and conclusion.
+
+c-) What is the estimated probability that houses below have good quality? Calculate the 95% confidence interval. Variables names are shorten to fit all data neatly below
+
+
+a-) Built in function performed the backward elimination. However, there are variables on the model that are not significant. We will eliminate them one at a time, based on the highest p value. 
+```{r}
+library(tidyverse)
+
+Q3.Dat <- data.frame(read.csv("/cloud/project/Final Exam Fall 2020 Question 2.csv"))
+Q3.Dat$Y=I(Q3.Dat$Quality==1)*1
+Q3.Dat<-dummy_cols(Q3.Dat, select_columns='Style')
+
+f.q3<-glm(Y~Sales.price+Finished.square.feet+Number.of.bedrooms+Number.of.bathrooms+Air.conditioning+Garage.size+Pool+Year.built+Style_2+Style_3+Style_4+Style_5+Style_6+Style_7+Lot.size+Adjacent.to.highway,family=binomial,data=Q3.Dat)
+
+t0<-step(f.q3,direction="backward",trace=0)
+summary(t0)
+t1<-glm(formula = Y ~ Sales.price + Finished.square.feet + Number.of.bedrooms + 
+    Number.of.bathrooms + Air.conditioning + Garage.size + Style_6 + 
+    Style_7 + Lot.size, family = binomial, data = Q3.Dat)
+summary(t1)
+#dropping Style_6 pvalue is 0.9951
+t2<-glm(formula = Y ~ Sales.price + Finished.square.feet + Number.of.bedrooms + 
+    Number.of.bathrooms + Air.conditioning + Garage.size  + 
+    Style_7 + Lot.size, family = binomial, data = Q3.Dat)
+summary(t2)
+
+#dropping Style_7 pvalue is 0.4281 
+t3<-glm(formula = Y ~ Sales.price + Finished.square.feet + Number.of.bedrooms + 
+    Number.of.bathrooms + Air.conditioning + Garage.size  + 
+     Lot.size, family = binomial, data = Q3.Dat)
+summary(t3)
+#dropping Air.conditioning  pvalue is 0.9907
+t4<-glm(formula = Y ~ Sales.price + Finished.square.feet + Number.of.bedrooms + 
+    Number.of.bathrooms + Garage.size  + 
+     Lot.size, family = binomial, data = Q3.Dat)
+summary(t4)
+#dropping inished.square.feet pvalue is  0.2396   
+t5<-glm(formula = Y ~ Sales.price + Number.of.bedrooms + 
+     Number.of.bathrooms + Garage.size  + 
+     Lot.size, family = binomial, data = Q3.Dat)
+summary(t5)
+#dropping Number.of.bedrooms  pvalue is 0.16  
+t6<-glm(formula = Y ~ Sales.price + 
+     Number.of.bathrooms + Garage.size  + 
+     Lot.size, family = binomial, data = Q3.Dat)
+summary(t6)
+
+#dropping Number.of.bathrooms  pvalue is 0.26  
+t7<-glm(formula = Y ~ Sales.price + Garage.size+Lot.size, family = binomial, data = Q3.Dat)
+summary(t7)
+
+```
+
+b-) The fit is good.
+```{r}
+library(ResourceSelection)
+hoslem.test(t7$y,fitted(t7),g=5)
+
+```
+c-) Please see below
+```{r}
+test.dat<-data.frame(matrix(c(559000,2791,3,4,1,3,0,1992,1,30595,0
+,535000,3381,5,4,1,3,0,1988,7,23172,0
+,525000,3459,5,4,1,2,0,1978,5,35351,0),byrow=T,nrow=3,ncol=11))
+dimnames(test.dat)[[2]]<-c("Sales.price","Finished.square.feet","Number.of.bedrooms","Number.of.bathroom","Air.conditioning","Garage.size","Pool","Year.built","Style","Lot.size","Adjacent.to.highway")
+predict(t7,test.dat,type="response")
+```
+## Question 4
+
+Use ships data sets in the MASS package. Copy and paste and following code "library(MASS);data(ships,package = "MASS")".
+
+Data contains the number of wave damage incidents and aggregate months of service for different types of ships broken down by year of construction and period of operation.
+
+a-) All variables and model are significant.
+
+```{r}
+library(MASS);data(ships,package = "MASS")
+f.m4<-glm(incidents~.,data=ships,family=poisson)
+summary(f.m4)
+drop1(f.m4,test="Chi")
+anova(f.m4,test="Chi")
+ 
+```
+b-)
+```{r}
+test.data<-data.frame(type="B",year=60,period=60,service=44882)
+predict(f.m4,test.data,type="response")
+```
+## Question 5
+
+Refer the question 2-c and your final model . There are outliers in the model. Build a robust regression model (use the same variables) and compare your regression model and outputs with the model you built in question 2c. (10 Points)
+
+The results do look so much different, infact regression model is performing slightly better.
+
+```{r}
+library(MASS)
+rr.huber <- rlm(log(Sales.price)~Finished.square.feet+Year.built+Lot.size+Style_7+Garage.size+Quality_3+Quality_2+Pool+Style_4+Number.of.bedrooms+Style_2,data=Q2.Dev)
+summary(rr.huber)
+cbind(rr.huber$coefficients,m.q2.f$coefficients)
+
+reg.predict<-exp(predict(m.q2.f,Q2.hold))
+rob.predict<-exp(predict(rr.huber,Q2.hold))
+
+
+#SSEs
+
+cbind(REG=SSE(Q2.hold$Sales.price,reg.predict),
+Robust=SSE(Q2.hold$Sales.price,rob.predict))
+
+#R Squares
+cbind(Reg=1-R2(Q2.hold$Sales,reg.predict),Robust=1-R2(Q2.hold$Sales,rob.predict))
+
+
+```
